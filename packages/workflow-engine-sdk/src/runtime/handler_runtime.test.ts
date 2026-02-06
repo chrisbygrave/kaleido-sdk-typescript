@@ -49,7 +49,7 @@ const handlerRuntimeConfig: HandlerRuntimeConfig = {
     providerName: 'test-provider',
     providerMetadata: { version: '1.0.0' },
     authToken: 'test-token',
-    authHeaderName: 'Authorization',
+    authHeaderName: 'Authorization'
 };
 
 const heartbeatConfig: HandlerRuntimeConfig = {
@@ -112,15 +112,15 @@ describe('HandlerRuntime', () => {
     beforeAll((done) => {
         // Create HTTP server
         httpServer = createServer();
-        
+
         // Create WebSocket server
         wss = new WebSocketServer({ server: httpServer, autoPong: false });
-        
+
         // Handle WebSocket connections
         wss.on('connection', (ws, req) => {
             connectedSocket = ws;
             request = req;
-        
+
             // Handle incoming messages
             ws.on('message', (data, isBinary: boolean) => {
                 ws.send(isBinary ? data : data.toString());
@@ -129,7 +129,7 @@ describe('HandlerRuntime', () => {
             ws.on('close', () => {
                 connectedSocket = undefined;
             });
-            
+
             ws.removeAllListeners('ping');
             ws.on('ping', async (data) => {
                 pingReceived = true;
@@ -139,12 +139,12 @@ describe('HandlerRuntime', () => {
                     ignoredPing = true;
                 }
             });
-            
+
             ws.on('error', () => {
                 // Handle errors silently
             });
         });
-        
+
         // Start server on random port
         httpServer.listen(0, () => {
             const address = httpServer.address();
@@ -158,7 +158,7 @@ describe('HandlerRuntime', () => {
             done();
         });
     });
-    
+
     afterAll((done) => {
         wss.close(() => {
             httpServer.close(() => {
@@ -168,13 +168,13 @@ describe('HandlerRuntime', () => {
         handlerRuntime?.stop();
         connectedSocket?.close();
     });
-    
+
     beforeEach(() => {
         pingReceived = false;
         mockShouldRespondToPings = true; // Default to responding to pings
         ignoredPing = false;
     });
-    
+
     afterEach(() => {
         handlerRuntime?.stop();
         connectedSocket?.close();
@@ -192,6 +192,22 @@ describe('HandlerRuntime', () => {
     it('should create a handler runtime', () => {
         handlerRuntime = new HandlerRuntime(handlerRuntimeConfig);
         expect(handlerRuntime).toBeDefined();
+    })
+    it('should create a handler runtime and propagate optional headers', async () => {
+        const config = { ...handlerRuntimeConfig }
+        config.options = {
+            headers: {
+                'Custom-Header': 'value'
+            }
+        }
+        handlerRuntime = new HandlerRuntime(config);
+        expect(handlerRuntime).toBeDefined();
+        await handlerRuntime.start();
+        // Wait a bit for the connection to establish and handlers to initialize
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(handlerRuntime.isWebSocketConnected()).toBe(true);
+        expect(request.headers['custom-header']).toEqual('value');
+        handlerRuntime.stop();
     })
     it('should register handlers', () => {
         handlerRuntime = new HandlerRuntime(handlerRuntimeConfig);
@@ -238,17 +254,17 @@ describe('HandlerRuntime', () => {
         await handlerRuntime.start();
         // Wait a bit for the server to start
         await new Promise(resolve => setTimeout(resolve, 100));
-        
+
         // let's open a websocket now
         await new Promise<void>((resolve, reject) => {
             connectedSocket = new WebSocket(`ws://localhost:${process.env.WEBSOCKET_PORT}`);
-            
+
             connectedSocket.on('open', () => {
                 expect(handlerRuntime.isWebSocketConnected()).toBe(true);
                 connectedSocket?.close();
                 resolve();
             });
-            
+
             connectedSocket.on('error', (error) => {
                 handlerRuntime.stop();
                 reject(error);
@@ -271,7 +287,7 @@ describe('HandlerRuntime', () => {
     it('should throw an error sending a message when not started', async () => {
         handlerRuntime = new HandlerRuntime(handlerRuntimeConfig);
         handlerRuntime.sendMessage({ messageType: 'test-message' });
-      
+
         expect(mockLogger.warn).toHaveBeenCalledWith('Attempted to send message while disconnected');
     })
     it('should handle an error on the websocket', async () => {
@@ -290,7 +306,7 @@ describe('HandlerRuntime', () => {
         connectedSocket?.send(JSON.stringify({ messageType: 'unknown' }));
         handlerRuntime.stop();
         await new Promise(resolve => setTimeout(resolve, 100));
-        expect(mockLogger.warn).toHaveBeenCalledWith("Unknown message type", { "messageType": "unknown"});
+        expect(mockLogger.warn).toHaveBeenCalledWith("Unknown message type", { "messageType": "unknown" });
     })
     it('should handle a protocol error message', async () => {
         handlerRuntime = new HandlerRuntime(handlerRuntimeConfig);
@@ -303,7 +319,7 @@ describe('HandlerRuntime', () => {
         handlerRuntime.stop();
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(mockLogger.warn).not.toHaveBeenCalled();
-        expect(mockLogger.error).toHaveBeenCalledWith('Protocol error received', { error: 'bang'});
+        expect(mockLogger.error).toHaveBeenCalledWith('Protocol error received', { error: 'bang' });
     })
     it('should handle a protocol error message', async () => {
         handlerRuntime = new HandlerRuntime(handlerRuntimeConfig);
@@ -316,7 +332,7 @@ describe('HandlerRuntime', () => {
         handlerRuntime.stop();
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(mockLogger.warn).not.toHaveBeenCalled();
-        expect(mockLogger.error).toHaveBeenCalledWith('Protocol error received', { error: 'bang'});
+        expect(mockLogger.error).toHaveBeenCalledWith('Protocol error received', { error: 'bang' });
     })
     it('should handle a transactions result message', async () => {
         handlerRuntime = new HandlerRuntime(handlerRuntimeConfig);
@@ -523,8 +539,8 @@ describe('HandlerRuntime', () => {
         // Wait a bit for the server to start
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(handlerRuntime.isWebSocketConnected()).toBe(true);
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_CONFIG, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_CONFIG,
             id: 'test-config-id',
             handler: 'test-event-source',
             streamId: 'test-stream-id',
@@ -546,8 +562,8 @@ describe('HandlerRuntime', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(handlerRuntime.isWebSocketConnected()).toBe(true);
         // First send config to store it
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_CONFIG, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_CONFIG,
             id: 'test-config-id',
             handler: 'test-event-source',
             streamId: 'test-stream-id',
@@ -556,8 +572,8 @@ describe('HandlerRuntime', () => {
         }));
         await new Promise(resolve => setTimeout(resolve, 50));
         // Then send poll request
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_POLL, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_POLL,
             id: 'test-poll-id',
             handler: 'test-event-source',
             streamId: 'test-stream-id',
@@ -576,8 +592,8 @@ describe('HandlerRuntime', () => {
         // Wait a bit for the server to start
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(handlerRuntime.isWebSocketConnected()).toBe(true);
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_POLL, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_POLL,
             id: 'test-poll-id',
             handler: 'test-event-source',
             streamId: 'test-stream-id',
@@ -594,8 +610,8 @@ describe('HandlerRuntime', () => {
         // Wait a bit for the server to start
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(handlerRuntime.isWebSocketConnected()).toBe(true);
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_POLL, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_POLL,
             id: 'test-poll-id',
             handler: 'test-event-source',
             streamId: 'test-stream-id',
@@ -613,8 +629,8 @@ describe('HandlerRuntime', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(handlerRuntime.isWebSocketConnected()).toBe(true);
         // First send config to store it
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_CONFIG, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_CONFIG,
             id: 'test-config-id',
             handler: 'test-event-source',
             streamId: 'test-stream-id',
@@ -623,8 +639,8 @@ describe('HandlerRuntime', () => {
         }));
         await new Promise(resolve => setTimeout(resolve, 50));
         // Then send poll request with undefined handler
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_POLL, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_POLL,
             id: 'test-poll-id',
             streamId: 'test-stream-id',
             streamName: 'test-stream-name'
@@ -649,8 +665,8 @@ describe('HandlerRuntime', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(handlerRuntime.isWebSocketConnected()).toBe(true);
         // First send config to store it
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_CONFIG, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_CONFIG,
             id: 'test-config-id',
             handler: 'test-event-source-error',
             streamId: 'test-stream-id',
@@ -659,8 +675,8 @@ describe('HandlerRuntime', () => {
         }));
         await new Promise(resolve => setTimeout(resolve, 50));
         // Then send poll request
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_POLL, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_POLL,
             id: 'test-poll-id',
             handler: 'test-event-source-error',
             streamId: 'test-stream-id',
@@ -677,8 +693,8 @@ describe('HandlerRuntime', () => {
         // Wait a bit for the server to start
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(handlerRuntime.isWebSocketConnected()).toBe(true);
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_VALIDATE_CONFIG, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_VALIDATE_CONFIG,
             id: 'test-validate-id',
             handler: 'test-event-source',
             authTokens: { 'test-token': 'test-value' }
@@ -696,8 +712,8 @@ describe('HandlerRuntime', () => {
         // Wait a bit for the server to start
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(handlerRuntime.isWebSocketConnected()).toBe(true);
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_VALIDATE_CONFIG, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_VALIDATE_CONFIG,
             id: 'test-validate-id',
             handler: 'test-event-source'
         }));
@@ -711,8 +727,8 @@ describe('HandlerRuntime', () => {
         // Wait a bit for the server to start
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(handlerRuntime.isWebSocketConnected()).toBe(true);
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_VALIDATE_CONFIG, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_VALIDATE_CONFIG,
             id: 'test-validate-id'
         }));
         handlerRuntime.stop();
@@ -734,8 +750,8 @@ describe('HandlerRuntime', () => {
         // Wait a bit for the server to start
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(handlerRuntime.isWebSocketConnected()).toBe(true);
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_VALIDATE_CONFIG, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_VALIDATE_CONFIG,
             id: 'test-validate-id',
             handler: 'test-event-source-error'
         }));
@@ -751,8 +767,8 @@ describe('HandlerRuntime', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(handlerRuntime.isWebSocketConnected()).toBe(true);
         // First send config to store it
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_CONFIG, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_CONFIG,
             id: 'test-config-id',
             handler: 'test-event-source',
             streamId: 'test-stream-id',
@@ -761,8 +777,8 @@ describe('HandlerRuntime', () => {
         }));
         await new Promise(resolve => setTimeout(resolve, 50));
         // Then send delete request
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_DELETE, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_DELETE,
             id: 'test-delete-id',
             handler: 'test-event-source',
             streamId: 'test-stream-id',
@@ -784,8 +800,8 @@ describe('HandlerRuntime', () => {
         // Wait a bit for the server to start
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(handlerRuntime.isWebSocketConnected()).toBe(true);
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_DELETE, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_DELETE,
             id: 'test-delete-id',
             handler: 'test-event-source',
             streamId: 'test-stream-id'
@@ -800,8 +816,8 @@ describe('HandlerRuntime', () => {
         // Wait a bit for the server to start
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(handlerRuntime.isWebSocketConnected()).toBe(true);
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_DELETE, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_DELETE,
             id: 'test-delete-id',
             streamId: 'test-stream-id'
         }));
@@ -825,8 +841,8 @@ describe('HandlerRuntime', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(handlerRuntime.isWebSocketConnected()).toBe(true);
         // First send config to store it
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_CONFIG, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_CONFIG,
             id: 'test-config-id',
             handler: 'test-event-source-error',
             streamId: 'test-stream-id',
@@ -835,8 +851,8 @@ describe('HandlerRuntime', () => {
         }));
         await new Promise(resolve => setTimeout(resolve, 50));
         // Then send delete request
-        connectedSocket?.send(JSON.stringify({ 
-            messageType: WSMessageType.EVENT_SOURCE_DELETE, 
+        connectedSocket?.send(JSON.stringify({
+            messageType: WSMessageType.EVENT_SOURCE_DELETE,
             id: 'test-delete-id',
             handler: 'test-event-source-error',
             streamId: 'test-stream-id'
@@ -856,18 +872,18 @@ describe('HandlerRuntime', () => {
         it('should setup and cleanup heartbeat timers', async () => {
             handlerRuntime = new HandlerRuntime(heartbeatConfig);
             handlerRuntime.registerTransactionHandler('test-transaction-handler', mockTransactionHandler);
-            
+
             const startPromise = handlerRuntime.start();
-            
+
             // Wait for connection to establish with timeout
             await Promise.race([
                 new Promise(resolve => setTimeout(resolve, 100)),
                 startPromise
             ]);
-            
+
             // Wait a bit more for heartbeat setup
             await new Promise(resolve => setTimeout(resolve, 10));
-            
+
             // Verify heartbeat setup was logged
             expect(mockLogger.debug).toHaveBeenCalledWith(
                 'Setting up WebSocket heartbeat',
@@ -876,58 +892,58 @@ describe('HandlerRuntime', () => {
                     pongTimeout: 5
                 })
             );
-            
+
             // Stop the runtime - this should cleanup heartbeat
             handlerRuntime.stop();
-            
+
             // Verify cleanup was logged
             expect(mockLogger.debug).toHaveBeenCalledWith('Cleared ping interval');
         });
         it('should clear pong timeout when pong is received', async () => {
             mockShouldRespondToPings = true; // Ensure server responds to pings
-            
+
             handlerRuntime = new HandlerRuntime(heartbeatConfig);
             handlerRuntime.registerTransactionHandler('test-transaction-handler', mockTransactionHandler);
-            
+
             const startPromise = handlerRuntime.start();
-            
+
             // Wait for connection to establish
             await Promise.race([
                 new Promise(resolve => setTimeout(resolve, 100)),
                 startPromise
             ]);
-            
+
             // Wait a bit more for connection
             await new Promise(resolve => setTimeout(resolve, 10));
-            
+
             expect(handlerRuntime.isWebSocketConnected()).toBe(true);
-            
+
             // Clear previous logs
             mockLogger.warn.mockClear();
-            
+
             // Wait for first ping to be sent (which sets up pongTimeout)
             // With pingIntervalMs: 100, we need to wait at least 100ms
             await new Promise(resolve => setTimeout(resolve, 110));
-            
+
             // Verify ping was sent
             expect(pingReceived).toBe(true);
-            
+
             // Server should have responded with pong (since mockShouldRespondToPings is true)
             // Wait a bit for the pong to be processed
             await new Promise(resolve => setTimeout(resolve, 10));
-            
+
             // Now wait for the pongTimeout period (50ms) plus a small buffer
             // If the pong handler worked correctly, the timeout should have been cleared
             // and we should NOT see the "Pong timeout" warning
             await new Promise(resolve => setTimeout(resolve, 60));
-            
+
             // Verify that the pong timeout warning was NOT called
             // (because the pong event should have cleared the timeout)
             expect(mockLogger.warn).not.toHaveBeenCalledWith("Pong timeout - connection appears dead, reconnecting");
-            
+
             // Verify connection is still alive
             expect(handlerRuntime.isWebSocketConnected()).toBe(true);
-            
+
             handlerRuntime.stop();
         });
         it('should return early from setupHeartbeat when WebSocket is undefined', () => {
@@ -942,66 +958,66 @@ describe('HandlerRuntime', () => {
         it('should log when receiving ping from server', async () => {
             handlerRuntime = new HandlerRuntime(heartbeatConfig);
             handlerRuntime.registerTransactionHandler('test-transaction-handler', mockTransactionHandler);
-            
+
             const startPromise = handlerRuntime.start();
-            
+
             // Wait for connection to establish with timeout
             await Promise.race([
                 new Promise(resolve => setTimeout(resolve, 100)),
                 startPromise
             ]);
-            
+
             // Wait a bit more for connection
             await new Promise(resolve => setTimeout(resolve, 10));
-            
+
             // Clear previous debug logs
             mockLogger.debug.mockClear();
-            
+
             // Send a ping from the server to the client
             if (connectedSocket) {
                 connectedSocket.ping();
-                
+
                 // Wait a bit for the ping event to be processed
                 await new Promise(resolve => setTimeout(resolve, 10));
-                
+
                 // Verify that receiving ping from server was logged
                 expect(mockLogger.debug).toHaveBeenCalledWith('Received WebSocket ping from server');
             }
-            
+
             handlerRuntime.stop();
         });
         it('should send ping and receive pong to maintain heartbeat', async () => {
             handlerRuntime = new HandlerRuntime(heartbeatConfig);
             handlerRuntime.registerTransactionHandler('test-transaction-handler', mockTransactionHandler);
-            
+
             const startPromise = handlerRuntime.start();
-            
+
             // Wait for connection to establish with timeout
             await Promise.race([
                 new Promise(resolve => setTimeout(resolve, 100)),
                 startPromise
             ]);
-            
+
             // Wait a bit more for connection
             await new Promise(resolve => setTimeout(resolve, 10));
-            
+
             expect(handlerRuntime.isWebSocketConnected()).toBe(true);
-            
+
             // Wait for first ping to be sent (10ms interval + small buffer)
             await new Promise(resolve => setTimeout(resolve, 15));
-            
+
             // Verify connection is still alive (pong should have been received)
             // The ws library automatically responds to pings with pong
             expect(handlerRuntime.isWebSocketConnected()).toBe(true);
-            
+
             handlerRuntime.stop();
         });
         it('should terminate connection when pong timeout occurs', async () => {
             // Set flag to prevent pong replies
             mockShouldRespondToPings = false;
-            
+
             handlerRuntime = new HandlerRuntime(heartbeatConfig);
-            
+
             await handlerRuntime.start();
 
             await new Promise(resolve => setTimeout(resolve, 200));
@@ -1013,7 +1029,7 @@ describe('HandlerRuntime', () => {
 
             handlerRuntime.stop();
             connectedSocket?.terminate();
-            
+
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             expect(mockLogger.warn).toHaveBeenCalledWith("Pong timeout - connection appears dead, reconnecting");
@@ -1021,26 +1037,26 @@ describe('HandlerRuntime', () => {
         it('should handle multiple ping-pong cycles', async () => {
             handlerRuntime = new HandlerRuntime(heartbeatConfig);
             handlerRuntime.registerTransactionHandler('test-transaction-handler', mockTransactionHandler);
-            
+
             const startPromise = handlerRuntime.start();
-            
+
             // Wait for connection to establish with timeout
             await Promise.race([
                 new Promise(resolve => setTimeout(resolve, 100)),
                 startPromise
             ]);
-            
+
             // Wait a bit more for connection
             await new Promise(resolve => setTimeout(resolve, 10));
-            
+
             // Wait for first ping cycle (10ms)
             await new Promise(resolve => setTimeout(resolve, 15));
             expect(handlerRuntime.isWebSocketConnected()).toBe(true);
-            
+
             // Wait for second ping cycle (another 10ms)
             await new Promise(resolve => setTimeout(resolve, 15));
             expect(handlerRuntime.isWebSocketConnected()).toBe(true);
-            
+
             handlerRuntime.stop();
         });
     })
