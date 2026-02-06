@@ -15,7 +15,7 @@
 // limitations under the License.
 
 
-import { describe, it, expect, jest } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 
 //quietens the console during tests
 import '../../tests/mock-logger';
