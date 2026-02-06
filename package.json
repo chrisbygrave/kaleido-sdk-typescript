@@ -1,0 +1,13 @@
+{
+  "name": "kaleido-sdk-typescript",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kaleido TypeScript SDKs",
+  "engines": {
+    "node": ">=22",
+    "npm": ">=11"
+  },
+  "workspaces": [
+    "packages/workflow-engine-sdk"
+  ]
+}
