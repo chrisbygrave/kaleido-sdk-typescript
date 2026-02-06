@@ -29,7 +29,12 @@
   },
   "keywords": [
     "kaleido",
-    "workflow-engine"
+    "sdk",
+    "typescript",
+    "workflows",
+    "workflow-engine",
+    "handlers",
+    "providers"
   ],
   "author": "Kaleido, Inc.",
   "license": "Apache-2.0",

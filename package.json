@@ -7,6 +7,21 @@
     "node": ">=22",
     "npm": ">=11"
   },
+  "repository": {
+      "type": "git",
+      "url": "git+https://github.com/kaleido-io/kaleido-sdk-typescript.git"
+  },
+  "author": "Kaleido, Inc.",
+  "license": "Apache-2.0",
+  "keywords": [
+    "kaleido",
+    "sdk",
+    "typescript",
+    "workflows",
+    "workflow-engine",
+    "handlers",
+    "providers"
+  ],
   "workspaces": [
     "packages/workflow-engine-sdk"
   ]
