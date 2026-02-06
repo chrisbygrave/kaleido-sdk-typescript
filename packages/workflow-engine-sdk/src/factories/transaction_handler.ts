@@ -20,8 +20,6 @@
  * 
  * Provides factory functions for creating transaction handlers,
  * especially directed transaction handlers using the StageDirector pattern.
- * 
- * Matches Go SDK's txn_handler.go
  */
 
 import {
@@ -37,8 +35,7 @@ import {
 import { evalDirected } from '../helpers/stage_director';
 
 /**
- * Transaction handler factory interface
- * Matches Go SDK's TransactionHandlerFactory
+ * Transaction handler factory interface.
  */
 export interface TransactionHandlerFactory extends TransactionHandler {
   withInitFn(initFn: (engAPI: EngineAPI) => Promise<void>): TransactionHandlerFactory;
@@ -46,8 +43,7 @@ export interface TransactionHandlerFactory extends TransactionHandler {
 }
 
 /**
- * Internal transaction handler base
- * Matches Go SDK's txnHandlerBase[T]
+ * Internal base implementation for directed transaction handlers.
  */
 class TransactionHandlerBase<T extends WithStageDirector> implements TransactionHandlerFactory {
   private _name: string;
@@ -95,9 +91,8 @@ class TransactionHandlerBase<T extends WithStageDirector> implements Transaction
 }
 
 /**
- * Create a new simple directed handler, with no initialization
- * Matches Go SDK's NewDirectedTransactionHandler[T WithStageDirector](name, actionMap)
- * 
+ * Create a new simple directed handler, with no initialization.
+ *
  * A directed handler uses the StageDirector pattern to route requests
  * to different actions based on the input's `action` field.
  * 

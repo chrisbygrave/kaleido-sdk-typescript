@@ -24,6 +24,8 @@
  * - Stream management (create, delete, start, stop)
  */
 
+import { newError, SDKErrors } from '../i18n/errors';
+
 // ============================================================================
 // TypeScript Interfaces
 // ============================================================================
@@ -174,13 +176,13 @@ export class WorkflowEngineRestClient {
     // Build base URL from environment variables if not provided
     if (!config?.baseUrl) {
       if (!process.env.ACCOUNT) {
-        throw new Error('ACCOUNT is not set and no baseUrl provided');
+        throw newError(SDKErrors.MsgSDKAccountNotSet);
       }
       if (!process.env.ENVIRONMENT) {
-        throw new Error('ENVIRONMENT is not set and no baseUrl provided');
+        throw newError(SDKErrors.MsgSDKEnvironmentNotSet);
       }
       if (!process.env.WORKFLOW_ENGINE) {
-        throw new Error('WORKFLOW_ENGINE is not set and no baseUrl provided');
+        throw newError(SDKErrors.MsgSDKWorkflowEngineNotSet);
       }
       this.baseUrl = `https://${process.env.ACCOUNT}/endpoint/${process.env.ENVIRONMENT}/${process.env.WORKFLOW_ENGINE}/rest`;
     } else {

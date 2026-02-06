@@ -119,8 +119,7 @@ export interface DirectedRequestBatchOut<_T extends WithStageDirector> {
 }
 
 /**
- * Function type for handling batch directed requests
- * This matches the Go DirectedRequestBatchHandler function signature
+ * Function type for handling batch directed requests.
  */
 export type DirectedRequestBatchHandler<T extends WithStageDirector> = (
   requests: DirectedRequestBatchIn<T>[]

@@ -21,8 +21,6 @@
  * Provides the StageDirector pattern for building composable transaction handlers.
  * The StageDirector pattern allows handlers to define multiple "actions" that can
  * be configured to transition to different stages based on success or failure.
- * 
- * Matches Go SDK's txn_handler.go
  */
 
 import { SDKErrors, newError } from '../i18n/errors';
@@ -121,7 +119,7 @@ export class StageDirectorHelper {
     // Set result based on evaluation outcome
     switch (result) {
       case EvalResult.HARD_FAILURE: {
-        // Check if failureStage is missing (validation inside switch to match Go SDK)
+        // Check if failureStage is missing (validation inside switch for failure-stage handling)
         const failureStage = stageDirector.failureStage;
         if (!failureStage && !customStage) {
           log.error(`Transaction ${request.transactionId} cannot be transitioned due to missing failureStage`);
@@ -214,7 +212,7 @@ export async function evalDirected<T extends WithStageDirector>(
     const execReq: ExecutableRequest = { idx: i, request: req, input: {} as T };
 
     try {
-      // Direct type assertion (matches Go SDK's json.Unmarshal into generic type)
+      // Direct type assertion for request input (JSON-deserialized generic type)
       execReq.input = req.input as T;
       
       // Check if input is valid (not null or undefined)

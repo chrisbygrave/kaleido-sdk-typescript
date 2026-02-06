@@ -106,7 +106,7 @@ describe('WorkflowEngineRestClient', () => {
     it('should throw error if baseUrl and ACCOUNT are not provided', () => {
       expect(() => {
         new WorkflowEngineRestClient();
-      }).toThrow('ACCOUNT is not set and no baseUrl provided');
+      }).toThrow('KA140632: ACCOUNT is not set and no baseUrl provided');
     });
 
     it('should throw error if baseUrl and ENVIRONMENT are not provided', () => {
@@ -114,7 +114,7 @@ describe('WorkflowEngineRestClient', () => {
 
       expect(() => {
         new WorkflowEngineRestClient();
-      }).toThrow('ENVIRONMENT is not set and no baseUrl provided');
+      }).toThrow('KA140633: ENVIRONMENT is not set and no baseUrl provided');
     });
 
     it('should throw error if baseUrl and WORKFLOW_ENGINE are not provided', () => {
@@ -123,7 +123,7 @@ describe('WorkflowEngineRestClient', () => {
 
       expect(() => {
         new WorkflowEngineRestClient();
-      }).toThrow('WORKFLOW_ENGINE is not set and no baseUrl provided');
+      }).toThrow('KA140634: WORKFLOW_ENGINE is not set and no baseUrl provided');
     });
 
     it('should prefer explicit config over environment variables', () => {

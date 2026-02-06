@@ -37,6 +37,7 @@ import {
 import { EngineClient } from './engine_client';
 import { newLogger } from '../log/logger';
 import { getErrorMessage } from '../utils/errors';
+import { newError, SDKErrors } from '../i18n/errors';
 
 const log = newLogger('handler_runtime');
 
@@ -52,17 +53,29 @@ export enum HandlerRuntimeMode {
  * Configuration for the handler runtime
  */
 export interface HandlerRuntimeConfig {
+  // This is the websocket URL of the workflow engine
   url?: string;
+  // Provider name is the name of the provider
   providerName: string;
+  // Provider metadata is used to identify the provider to the workflow engine
   providerMetadata?: Record<string, string>;
+  // Auth token is used to authenticate the client to the workflow engine 
   authToken?: string;
+  // Auth header name is used to authenticate the client to the workflow engine   
   authHeaderName?: string;
+  // Headers are used to add additional headers to the websocket connection
   headers?: Record<string, string>;
+  // Options are used to pass additional options to the websocket connection
+  // This is directly from the ws library
   options?: ClientOptions;
+  // Reconnect delay is the delay before reconnecting to the workflow engine
   reconnectDelay?: number;
+  // Max attempts is the maximum number of attempts to reconnect to the workflow engine
   maxAttempts?: number;
-  pingIntervalMs?: number; // Interval between ping messages (default: 30000ms)
-  pongTimeoutMs?: number; // Timeout for pong response (default: 10000ms)
+  // Ping interval is the interval between ping messages (default: 30s)
+  pingIntervalMs?: number; 
+  // Pong timeout is the timeout for pong response (default: 10s)
+  pongTimeoutMs?: number; 
 }
 
 /**
@@ -70,6 +83,7 @@ export interface HandlerRuntimeConfig {
  */
 export class HandlerRuntime {
   private ws?: WebSocket;
+  // WebSocket server is the server that listens for inbound connections
   private wsServer?: WebSocketServer;
   private config: HandlerRuntimeConfig;
   private mode: HandlerRuntimeMode = HandlerRuntimeMode.OUTBOUND;
@@ -98,7 +112,7 @@ export class HandlerRuntime {
     if (process.env.WORKFLOW_ENGINE_MODE === 'inbound' ) {
       this.mode = HandlerRuntimeMode.INBOUND;
       if (!process.env.WEBSOCKET_PORT) {
-        throw new Error('WEBSOCKET_PORT is required in inbound mode');
+        throw newError(SDKErrors.MsgSDKWebSocketPortRequiredInbound);
       }
       this.port = parseInt(process.env.WEBSOCKET_PORT);
     }
@@ -151,7 +165,7 @@ export class HandlerRuntime {
         provider: this.config.providerName
       });
     } else {
-      log.info('Starting handler runtime in outbound mode', {
+      log.info('Starting handler runtime in outbound mode and registering with workflow engine at', {
         url: this.config.url,
         provider: this.config.providerName
       });
@@ -276,7 +290,7 @@ export class HandlerRuntime {
       () =>
         new Promise<void>((resolve, reject) => {
           if (!this.config.url) {
-            throw new Error('URL is required in outbound mode');
+            throw newError(SDKErrors.MsgSDKURLRequiredOutbound);
           }
           log.debug('Connecting to WebSocket', { url: this.config.url });
 
@@ -289,7 +303,8 @@ export class HandlerRuntime {
           };
 
           if (this.config.authToken) {
-            const authHeaderName = this.config.authHeaderName || 'X-Kld-Authz';
+            // We can default to Authorization if not set
+            const authHeaderName = this.config.authHeaderName ?? 'Authorization';
             wsOptions.headers = {
               ...wsOptions.headers,
               [authHeaderName]: this.config.authToken,
@@ -358,7 +373,7 @@ export class HandlerRuntime {
         const msg = JSON.parse(message);
         this.handleMessage(msg);
       } else {
-        log.warn('Received non-string message data');
+        log.warn('Received non-string message data, ignoring');
       }
     } catch (error) {
       log.error('Error processing message', { error });
@@ -452,6 +467,11 @@ export class HandlerRuntime {
   }
 
   private async handleTransactionsMessage(batch: WSHandleTransactions): Promise<void> {
+    if (!batch.handler) {
+      log.error('Handler not set in transactions message');
+      return;
+    }
+
     log.debug('Handling transactions', {
       handler: batch.handler,
       batchId: batch.id,
@@ -466,7 +486,7 @@ export class HandlerRuntime {
     };
 
     try {
-      const handler = this.transactionHandlers.get(batch.handler || '');
+      const handler = this.transactionHandlers.get(batch.handler);
       if (handler) {
         this.setActiveHandlerContext(batch.id, batch.authTokens || {});
         // Convert WSHandleTransactions to WSEvaluateBatch format expected by handler
