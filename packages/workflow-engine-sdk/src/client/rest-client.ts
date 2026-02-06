@@ -255,6 +255,7 @@ export class WorkflowEngineRestClient {
     const headers: Record<string, string> = {
       'accept': 'application/json',
       'Content-Type': 'application/json',
+      ...this.headers,
     };
 
     if (timeout) {
