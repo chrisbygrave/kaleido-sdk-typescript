@@ -1,6 +1,6 @@
 {
   "name": "@kaleido-io/workflow-engine-sdk",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "TypeScript SDK for Kaleido Workflow Engine",
   "main": "dist/src/index.js",
   "module": "dist-esm/src/index.js",
@@ -72,7 +72,8 @@
     "template/**/*",
     "!template/node_modules/**/*",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "CHANGELOG.md"
   ],
   "exports": {
     ".": {
