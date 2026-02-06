@@ -17,17 +17,8 @@
 
 import { describe, it, expect, jest } from '@jest/globals';
 
-// Mock newLogger before importing config
-const mockLogger = {
-    debug: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn()
-};
-
-jest.mock('../log/logger', () => ({
-    newLogger: jest.fn(() => mockLogger)
-}));
+//quietens the console during tests
+import '../../tests/mock-logger';
 
 import { EventSourceConf, newEventSource } from './event_source';
 import { WSEventSourceConfig, WSListenerPollRequest, WSListenerPollResult, WSHandlerEnvelope, WSMessageType, WSEventStreamInfo } from '../types/core';
@@ -48,7 +39,7 @@ interface TestEventData {
 }
 
 describe('newEventSource', () => {
-   
+
     it('should create an event source', () => {
         const pollFn = jest.fn(async () => {
             return {
@@ -57,7 +48,7 @@ describe('newEventSource', () => {
             };
         });
         const eventSource = newEventSource<TestCheckpoint, TestConfig, TestEventData>('test-event-source', pollFn)
-        
+
         expect(eventSource).toBeDefined();
         expect(eventSource.name()).toBe('test-event-source');
     })
@@ -98,7 +89,7 @@ describe('newEventSource', () => {
             };
         });
         const eventSource = newEventSource<TestCheckpoint, TestConfig, TestEventData>('test-event-source', pollFn);
-        
+
         const config: WSEventSourceConfig = {
             messageType: WSMessageType.EVENT_SOURCE_CONFIG,
             id: 'config-id',
@@ -107,14 +98,14 @@ describe('newEventSource', () => {
             streamId: 'stream-1',
             config: { endpoint: 'http://test.com' }
         };
-        
+
         const result: WSListenerPollResult = {
             messageType: WSMessageType.EVENT_SOURCE_POLL_RESULT,
             id: 'poll-id',
             handler: 'test-event-source',
             events: []
         };
-        
+
         const request: WSListenerPollRequest = {
             messageType: WSMessageType.EVENT_SOURCE_POLL,
             id: 'poll-id',
@@ -123,9 +114,9 @@ describe('newEventSource', () => {
             streamId: 'stream-1',
             checkpoint: { lastId: 0 }
         };
-        
+
         await eventSource.eventSourcePoll(config, result, request);
-        
+
         expect(pollFn).toHaveBeenCalledTimes(1);
         expect(result.events).toHaveLength(2);
         expect(result.events[0].idempotencyKey).toBe('key1');
@@ -143,7 +134,7 @@ describe('newEventSource', () => {
             };
         });
         const eventSource = newEventSource<TestCheckpoint, TestConfig, TestEventData>('test-event-source', pollFn);
-        
+
         const config: WSEventSourceConfig = {
             messageType: WSMessageType.EVENT_SOURCE_CONFIG,
             id: 'config-id',
@@ -152,14 +143,14 @@ describe('newEventSource', () => {
             streamId: 'stream-1',
             config: { endpoint: 'http://test.com' }
         };
-        
+
         const result: WSListenerPollResult = {
             messageType: WSMessageType.EVENT_SOURCE_POLL_RESULT,
             id: 'poll-id',
             handler: 'test-event-source',
             events: []
         };
-        
+
         const request: WSListenerPollRequest = {
             messageType: WSMessageType.EVENT_SOURCE_POLL,
             id: 'poll-id',
@@ -167,7 +158,7 @@ describe('newEventSource', () => {
             streamName: 'test-stream',
             streamId: 'stream-1'
         };
-        
+
         await eventSource.eventSourcePoll(config, result, request);
         expect(pollFn).toHaveBeenCalledTimes(1);
     })
@@ -177,7 +168,7 @@ describe('newEventSource', () => {
             throw new Error('Poll failed');
         });
         const eventSource = newEventSource<TestCheckpoint, TestConfig, TestEventData>('test-event-source', pollFn);
-        
+
         const config: WSEventSourceConfig = {
             messageType: WSMessageType.EVENT_SOURCE_CONFIG,
             id: 'config-id',
@@ -186,14 +177,14 @@ describe('newEventSource', () => {
             streamId: 'stream-1',
             config: { endpoint: 'http://test.com' }
         };
-        
+
         const result: WSListenerPollResult = {
             messageType: WSMessageType.EVENT_SOURCE_POLL_RESULT,
             id: 'poll-id',
             handler: 'test-event-source',
             events: []
         };
-        
+
         const request: WSListenerPollRequest = {
             messageType: WSMessageType.EVENT_SOURCE_POLL,
             id: 'poll-id',
@@ -201,7 +192,7 @@ describe('newEventSource', () => {
             streamName: 'test-stream',
             streamId: 'stream-1'
         };
-        
+
         await eventSource.eventSourcePoll(config, result, request);
         expect(result.error).toBe('Poll failed');
     })
@@ -218,13 +209,13 @@ describe('newEventSource', () => {
         });
         const eventSource = newEventSource<TestCheckpoint, TestConfig, TestEventData>('test-event-source', pollFn)
             .withInitialCheckpoint(buildInitialCheckpointFn);
-        
+
         const result: WSHandlerEnvelope = {
             messageType: WSMessageType.EVENT_SOURCE_VALIDATE_CONFIG_RESULT,
             id: 'validate-id',
             handler: 'test-event-source'
         };
-        
+
         const request: any = {
             messageType: WSMessageType.EVENT_SOURCE_VALIDATE_CONFIG,
             id: 'validate-id',
@@ -233,7 +224,7 @@ describe('newEventSource', () => {
             streamId: 'stream-1',
             config: { endpoint: 'http://test.com' }
         };
-        
+
         await eventSource.eventSourceValidateConfig(result, request);
         expect(buildInitialCheckpointFn).toHaveBeenCalledTimes(1);
         expect(buildInitialCheckpointFn).toHaveBeenCalled();
@@ -251,13 +242,13 @@ describe('newEventSource', () => {
         });
         const eventSource = newEventSource<TestCheckpoint, TestConfig, TestEventData>('test-event-source', pollFn)
             .withConfigParser(configParserFn);
-        
+
         const result: WSHandlerEnvelope = {
             messageType: WSMessageType.EVENT_SOURCE_VALIDATE_CONFIG_RESULT,
             id: 'validate-id',
             handler: 'test-event-source'
         };
-        
+
         const request: any = {
             messageType: WSMessageType.EVENT_SOURCE_VALIDATE_CONFIG,
             id: 'validate-id',
@@ -266,7 +257,7 @@ describe('newEventSource', () => {
             streamId: 'stream-1',
             config: { invalid: 'config' }
         };
-        
+
         await eventSource.eventSourceValidateConfig(result, request);
         expect(result.error).toBe('Invalid config');
     })
@@ -284,7 +275,7 @@ describe('newEventSource', () => {
         });
         const eventSource = newEventSource<TestCheckpoint, TestConfig, TestEventData>('test-event-source', pollFn)
             .withConfigParser(configParserFn);
-        
+
         const config: WSEventSourceConfig = {
             messageType: WSMessageType.EVENT_SOURCE_CONFIG,
             id: 'config-id',
@@ -293,14 +284,14 @@ describe('newEventSource', () => {
             streamId: 'stream-1',
             config: { url: 'http://parsed.com' }
         };
-        
+
         const result: WSListenerPollResult = {
             messageType: WSMessageType.EVENT_SOURCE_POLL_RESULT,
             id: 'poll-id',
             handler: 'test-event-source',
             events: []
         };
-        
+
         const request: WSListenerPollRequest = {
             messageType: WSMessageType.EVENT_SOURCE_POLL,
             id: 'poll-id',
@@ -308,7 +299,7 @@ describe('newEventSource', () => {
             streamName: 'test-stream',
             streamId: 'stream-1'
         };
-        
+
         await eventSource.eventSourcePoll(config, result, request);
         expect(configParserFn).toHaveBeenCalledTimes(1);
     })
@@ -326,13 +317,13 @@ describe('newEventSource', () => {
         });
         const eventSource = newEventSource<TestCheckpoint, TestConfig, TestEventData>('test-event-source', pollFn)
             .withDeleteFn(deleteFn);
-        
+
         const result: WSHandlerEnvelope = {
             messageType: WSMessageType.EVENT_SOURCE_DELETE_RESULT,
             id: 'delete-id',
             handler: 'test-event-source'
         };
-        
+
         const request: any = {
             messageType: WSMessageType.EVENT_SOURCE_DELETE,
             id: 'delete-id',
@@ -340,7 +331,7 @@ describe('newEventSource', () => {
             streamName: 'test-stream',
             streamId: 'stream-1'
         };
-        
+
         await eventSource.eventSourceDelete(result, request);
         expect(deleteFn).toHaveBeenCalledTimes(1);
     })
@@ -357,13 +348,13 @@ describe('newEventSource', () => {
         });
         const eventSource = newEventSource<TestCheckpoint, TestConfig, TestEventData>('test-event-source', pollFn)
             .withDeleteFn(deleteFn);
-        
+
         const result: WSHandlerEnvelope = {
             messageType: WSMessageType.EVENT_SOURCE_DELETE_RESULT,
             id: 'delete-id',
             handler: 'test-event-source'
         };
-        
+
         const request: any = {
             messageType: WSMessageType.EVENT_SOURCE_DELETE,
             id: 'delete-id',
@@ -371,7 +362,7 @@ describe('newEventSource', () => {
             streamName: 'test-stream',
             streamId: 'stream-1'
         };
-        
+
         await eventSource.eventSourceDelete(result, request);
         expect(result.error).toBe('Delete failed');
     })
@@ -384,7 +375,7 @@ describe('newEventSource', () => {
             };
         });
         const eventSource = newEventSource<TestCheckpoint, TestConfig, TestEventData>('test-event-source', pollFn);
-        
+
         const config: WSEventSourceConfig = {
             messageType: WSMessageType.EVENT_SOURCE_CONFIG,
             id: 'config-id',
@@ -393,14 +384,14 @@ describe('newEventSource', () => {
             streamId: 'stream-1',
             config: { endpoint: 'http://test.com' }
         };
-        
+
         const result1: WSListenerPollResult = {
             messageType: WSMessageType.EVENT_SOURCE_POLL_RESULT,
             id: 'poll-id-1',
             handler: 'test-event-source',
             events: []
         };
-        
+
         const request1: WSListenerPollRequest = {
             messageType: WSMessageType.EVENT_SOURCE_POLL,
             id: 'poll-id-1',
@@ -408,16 +399,16 @@ describe('newEventSource', () => {
             streamName: 'test-stream',
             streamId: 'stream-1'
         };
-        
+
         await eventSource.eventSourcePoll(config, result1, request1);
-        
+
         const result2: WSListenerPollResult = {
             messageType: WSMessageType.EVENT_SOURCE_POLL_RESULT,
             id: 'poll-id-2',
             handler: 'test-event-source',
             events: []
         };
-        
+
         const request2: WSListenerPollRequest = {
             messageType: WSMessageType.EVENT_SOURCE_POLL,
             id: 'poll-id-2',
@@ -425,10 +416,10 @@ describe('newEventSource', () => {
             streamName: 'test-stream',
             streamId: 'stream-1'
         };
-        
+
         // Second poll should use cached config, so we don't pass config again
         await eventSource.eventSourcePoll(config, result2, request2);
-        
+
         // Poll function should be called twice, but config should be cached
         expect(pollFn).toHaveBeenCalledTimes(2);
     })

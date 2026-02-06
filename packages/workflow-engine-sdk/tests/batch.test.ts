@@ -15,11 +15,15 @@
 // limitations under the License.
 
 import { describe, it, expect } from '@jest/globals';
-import { 
-    BasicStageDirector, 
-    DirectedActionConfig, 
-    InvocationMode, 
-    EvalResult, 
+
+//quietens the console during tests
+import './mock-logger';
+
+import {
+    BasicStageDirector,
+    DirectedActionConfig,
+    InvocationMode,
+    EvalResult,
     WithStageDirector,
     DirectedRequestBatchIn
 } from '../src/index';
@@ -68,7 +72,7 @@ export class BatchTestHandler {
         requests: DirectedRequestBatchIn<BatchTestInput>[]
     ): Promise<{ result: EvalResult; output?: any; error?: Error }[]> {
         logger.info(`[BatchTest] Processing batch of ${requests.length} requests`);
-        
+
         return requests.map((req, index) => {
             try {
                 const input = req.value;
@@ -88,7 +92,7 @@ export class BatchTestHandler {
 
                 // Calculate percentage
                 const percentage = (input.value / input.totalValue) * 100;
-                
+
                 const result = {
                     percentage: percentage,
                     result: `The percentage is ${percentage.toFixed(2)}%`,
@@ -106,7 +110,7 @@ export class BatchTestHandler {
                         {
                             idempotencyKey: `key-${index}`,
                             topic: `test-topic-${index}`,
-                            data: {index}
+                            data: { index }
                         }
                     ]
                 };
@@ -133,7 +137,7 @@ describe('Batch Processing Test', () => {
     it('should process batch requests correctly', async () => {
         const handler = new BatchTestHandler();
         const actionMap = handler.getActionMap();
-        
+
         // Test the batch handler directly
         const batchAction = actionMap.get('batch-test');
         expect(batchAction).toBeDefined();
@@ -170,7 +174,7 @@ describe('Batch Processing Test', () => {
 
         // Verify results
         expect(results).toHaveLength(3);
-        
+
         results.forEach((result, index) => {
             expect(result.result).toBe(EvalResult.COMPLETE);
             expect(result.output).toBeDefined();
@@ -181,7 +185,7 @@ describe('Batch Processing Test', () => {
             expect(result.events).toHaveLength(1);
             expect(result.events?.[0].idempotencyKey).toBe(`key-${index}`);
             expect(result.events?.[0].topic).toBe(`test-topic-${index}`);
-            expect(result.events?.[0].data).toEqual({index});
+            expect(result.events?.[0].data).toEqual({ index });
         });
 
         logger.info('Batch processing test completed successfully');

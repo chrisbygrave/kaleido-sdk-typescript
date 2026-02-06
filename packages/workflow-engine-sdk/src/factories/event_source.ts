@@ -96,7 +96,7 @@ class EventSourceBase<CP, CF, DT> implements EventSourceFactory<CP, CF, DT> {
   private buildInitialCheckpointFn?: EventSourceBuildInitialCheckpointFn<CP, CF>;
   private initFn?: (engAPI: EngineAPI) => Promise<void>;
   private closeFn?: () => void;
-  
+
   private confs: Map<string, EventSourceConf<CF>> = new Map();
 
   constructor(name: string, pollFn: EventSourcePollFn<CP, CF, DT>) {
@@ -173,12 +173,12 @@ class EventSourceBase<CP, CF, DT> implements EventSourceFactory<CP, CF, DT> {
       streamName: request.streamName,
     };
     const parsedConfig = await this.buildConf(info, config.config);
-    
+
     const esConf: EventSourceConf<CF> = {
       ...info,
       config: parsedConfig,
     };
-    
+
     this.confs.set(request.streamId, esConf);
     return esConf;
   }
@@ -224,17 +224,17 @@ class EventSourceBase<CP, CF, DT> implements EventSourceFactory<CP, CF, DT> {
 
       // Get checkpoint from request, normalize undefined to null for poll function
       const checkpointIn: CP | null = request.checkpoint ?? null;
-      
+
       // Call user's poll function
       const pollResult = await this.pollFn(esConf, checkpointIn);
-      
+
       // Map events to ListenerEvent format
       result.events = pollResult.events.map((evt): ListenerEvent => ({
         idempotencyKey: evt.idempotencyKey,
         topic: evt.topic,
         data: evt.data,
       }));
-      
+
       // Set checkpoint
       result.checkpoint = pollResult.checkpointOut;
     } catch (error) {
@@ -254,7 +254,7 @@ class EventSourceBase<CP, CF, DT> implements EventSourceFactory<CP, CF, DT> {
           streamName: request.streamName,
         });
       }
-      
+
       this.confs.delete(request.streamId);
     } catch (error) {
       log.error('Delete failed', { error });
@@ -269,30 +269,6 @@ class EventSourceBase<CP, CF, DT> implements EventSourceFactory<CP, CF, DT> {
  * @param name - Handler name to register with the workflow engine
  * @param pollFn - Function that polls for new events
  * @returns EventSourceFactory for chaining configuration
- * 
- * @example
- * ```typescript
- * const eventSource = newEventSource<Checkpoint, Config, EventData>(
- *   'my-event-source',
- *   async (config, checkpointIn) => {
- *     const events = await fetchEvents(config.config, checkpointIn);
- *     return {
- *       checkpointOut: { lastId: events[events.length - 1]?.id || 0 },
- *       events: events.map(e => ({
- *         idempotencyKey: `event-${e.id}`,
- *         topic: 'my-topic',
- *         data: e
- *       }))
- *     };
- *   }
- * )
- * .withInitialCheckpoint(async (config) => ({ lastId: 0 }))
- * .withDeleteFn(async (info) => { 
- *   await cleanup(info.streamId); 
- * });
- * 
- * client.registerEventSource('my-event-source', eventSource);
- * ```
  */
 export function newEventSource<CP, CF, DT>(
   name: string,

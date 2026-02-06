@@ -19,16 +19,7 @@ import { describe, it, expect, jest, beforeAll, afterAll, beforeEach, afterEach 
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer, IncomingMessage } from 'http';
 
-const mockLogger = {
-    debug: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn()
-};
-
-jest.mock('../log/logger', () => ({
-    newLogger: jest.fn(() => mockLogger)
-}));
+import { mockLogger } from '../../tests/mock-logger';
 
 const mockEngineClient = {
     submitAsyncTransactions: jest.fn(),

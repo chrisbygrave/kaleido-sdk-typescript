@@ -17,17 +17,8 @@
 
 import { describe, it, expect, jest } from '@jest/globals';
 
-// Mock newLogger before importing config
-const mockLogger = {
-    debug: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn()
-};
-
-jest.mock('../log/logger', () => ({
-    newLogger: jest.fn(() => mockLogger)
-}));
+//quietens the console during tests
+import '../../tests/mock-logger';
 
 import { BasicStageDirector, evalDirected, StageDirectorHelper } from './stage_director';
 import { EvalResult, InvocationMode, WithStageDirector, WSEvaluateBatch, WSEvaluateReply, WSEvaluateRequest, WSMessageType, PatchOpType } from '../types/core';
@@ -86,7 +77,7 @@ const actionMap: Map<string, DirectedActionConfig<MyHandlerInput>> = new Map([
 ]);
 
 describe('BasicStageDirector', () => {
-   
+
     it('should create a basic stage director', () => {
         const stageDirector = new BasicStageDirector('test-action', 'test-output-path', 'test-next-stage', 'test-failure-stage');
         expect(stageDirector).toBeDefined();
@@ -107,7 +98,7 @@ describe('BasicStageDirector', () => {
                     name: `Tester ${i}`,
                 },
             },
-            input: { 
+            input: {
                 action: 'hello',
                 outputPath: '/output',
                 nextStage: 'end',

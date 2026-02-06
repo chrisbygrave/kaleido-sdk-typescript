@@ -15,19 +15,9 @@
 // limitations under the License.
 
 
-import { describe, it, expect, jest } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 
-// Mock newLogger before importing config
-const mockLogger = {
-    debug: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn()
-};
-
-jest.mock('../log/logger', () => ({
-    newLogger: jest.fn(() => mockLogger)
-}));
+import { mockLogger } from '../../tests/mock-logger';
 
 import { AuthConfig, AuthType, ConfigLoader, WorkflowEngineConfig } from './config';
 

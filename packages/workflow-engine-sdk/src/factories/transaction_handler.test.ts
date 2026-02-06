@@ -17,18 +17,6 @@
 
 import { describe, it, expect, jest } from '@jest/globals';
 
-// Mock newLogger before importing config
-const mockLogger = {
-    debug: jest.fn(),
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn()
-};
-
-jest.mock('../log/logger', () => ({
-    newLogger: jest.fn(() => mockLogger)
-}));
-
 jest.mock('../helpers/stage_director', () => ({
     evalDirected: jest.fn(() => Promise.resolve()),
 }));
@@ -40,7 +28,7 @@ import { EngineClient, EngineClientRuntime } from '../runtime/engine_client';
 import { evalDirected } from '../helpers/stage_director';
 
 describe('newDirectedTransactionHandler', () => {
-   
+
     it('should create a transaction handler', () => {
         const transactionHandler = newDirectedTransactionHandler('test-transaction-handler', new Map<string, DirectedActionConfig<WithStageDirector>>());
         expect(transactionHandler).toBeDefined();
@@ -72,7 +60,7 @@ describe('newDirectedTransactionHandler', () => {
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
         };
-        
+
         await transactionHandler.transactionHandlerBatch(reply, batch);
         expect(evalDirected).toHaveBeenCalledTimes(1);
         transactionHandler.close();
