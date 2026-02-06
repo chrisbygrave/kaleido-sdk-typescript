@@ -33,16 +33,14 @@ import { getErrorMessage } from '../utils/errors';
 const log = newLogger('event_source_factory');
 
 /**
- * Configuration for an event source with parsed config
- * Matches Go SDK's EventSourceConf[CF]
+ * Configuration for an event source with parsed config.
  */
 export interface EventSourceConf<CF> extends WSEventStreamInfo {
   config: CF;
 }
 
 /**
- * Event data structure returned by poll function
- * Matches Go SDK's EventSourceEvent[DT]
+ * Event data structure returned by poll function.
  */
 export interface EventSourceEvent<DT> {
   idempotencyKey: string;
@@ -51,8 +49,7 @@ export interface EventSourceEvent<DT> {
 }
 
 /**
- * Poll function signature for event sources
- * Matches Go SDK: func(ctx, s, cpIn) (cpOut, events, err)
+ * Poll function signature for event sources: (config, checkpointIn) => checkpointOut, events.
  */
 export type EventSourcePollFn<CP, CF, DT> = (
   config: EventSourceConf<CF>,
@@ -60,20 +57,17 @@ export type EventSourcePollFn<CP, CF, DT> = (
 ) => Promise<{ checkpointOut: CP; events: EventSourceEvent<DT>[] }>;
 
 /**
- * Build initial checkpoint from configuration
- * Matches Go SDK's EventSourceBuildInitialCheckpointFn[CP, CF]
+ * Build initial checkpoint from configuration.
  */
 export type EventSourceBuildInitialCheckpointFn<CP, CF> = (config: CF) => Promise<CP>;
 
 /**
- * Delete function for cleanup when event source is removed
- * Matches Go SDK's EventSourceDeleteFn
+ * Delete function for cleanup when event source is removed.
  */
 export type EventSourceDeleteFn = (info: WSEventStreamInfo) => Promise<void>;
 
 /**
- * Custom config parser function
- * Matches Go SDK's EventSourceConfigParserFn[CF]
+ * Custom config parser function.
  */
 export type EventSourceConfigParserFn<CF> = (
   info: WSEventStreamInfo,
@@ -81,8 +75,7 @@ export type EventSourceConfigParserFn<CF> = (
 ) => Promise<CF>;
 
 /**
- * Factory interface for building event sources with optional configuration
- * Matches Go SDK's EventSourceFactory[CP, CF]
+ * Factory interface for building event sources with optional configuration.
  */
 export interface EventSourceFactory<CP, CF, DT> extends EventSource {
   withDeleteFn(deleteFn: EventSourceDeleteFn): EventSourceFactory<CP, CF, DT>;
@@ -93,8 +86,7 @@ export interface EventSourceFactory<CP, CF, DT> extends EventSource {
 }
 
 /**
- * Internal event source implementation
- * Matches Go SDK's eventSourceBase[CP, CF, DT]
+ * Internal event source implementation.
  */
 class EventSourceBase<CP, CF, DT> implements EventSourceFactory<CP, CF, DT> {
   private _name: string;
@@ -155,7 +147,7 @@ class EventSourceBase<CP, CF, DT> implements EventSourceFactory<CP, CF, DT> {
   }
 
   /**
-   * Build config - matches Go SDK's buildConf
+   * Build and parse config for a stream.
    */
   private async buildConf(
     info: WSEventStreamInfo,
@@ -170,7 +162,7 @@ class EventSourceBase<CP, CF, DT> implements EventSourceFactory<CP, CF, DT> {
   }
 
   /**
-   * Build and cache config - matches Go SDK's buildAndCacheConf
+   * Build and cache config for a stream.
    */
   private async buildAndCacheConf(
     config: WSEventSourceConfig,
@@ -192,7 +184,7 @@ class EventSourceBase<CP, CF, DT> implements EventSourceFactory<CP, CF, DT> {
   }
 
   /**
-   * Validate config - matches Go SDK's EventSourceValidateConfig
+   * Validate config and optionally set initial checkpoint.
    */
   async eventSourceValidateConfig(result: any, request: any): Promise<void> {
     try {
@@ -215,10 +207,8 @@ class EventSourceBase<CP, CF, DT> implements EventSourceFactory<CP, CF, DT> {
   }
 
   /**
-   * Poll for events - matches Go SDK's EventSourcePoll
-   * 
-   * NOTE: This mutates the `result` parameter (Go-style output parameter pattern).
-   * This is intentional to match the Go SDK's API signature which passes output by pointer.
+   * Poll for events.
+   * Mutates the `result` parameter to match the engine's output-by-reference API.
    */
   async eventSourcePoll(
     config: WSEventSourceConfig,
@@ -254,7 +244,7 @@ class EventSourceBase<CP, CF, DT> implements EventSourceFactory<CP, CF, DT> {
   }
 
   /**
-   * Delete event source - matches Go SDK's EventSourceDelete
+   * Delete event source and clear cached config.
    */
   async eventSourceDelete(result: WSHandlerEnvelope, request: any): Promise<void> {
     try {
@@ -274,9 +264,8 @@ class EventSourceBase<CP, CF, DT> implements EventSourceFactory<CP, CF, DT> {
 }
 
 /**
- * Create a new event source with a poll function
- * Matches Go SDK's NewEventSource[CP, CF, DT](name, poll)
- * 
+ * Create a new event source with a poll function.
+ *
  * @param name - Handler name to register with the workflow engine
  * @param pollFn - Function that polls for new events
  * @returns EventSourceFactory for chaining configuration

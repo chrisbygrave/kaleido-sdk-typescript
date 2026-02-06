@@ -244,7 +244,7 @@ describe('HandlerRuntime', () => {
         delete config.url;
         config.maxAttempts = 1;
         handlerRuntime = new HandlerRuntime(config);
-        await expect(handlerRuntime.start()).rejects.toThrow('URL is required in outbound mode');
+        await expect(handlerRuntime.start()).rejects.toThrow('KA140630: URL is required in outbound mode');
     })
     it('should start a handler runtime in inbound mode', async () => {
         process.env.WORKFLOW_ENGINE_MODE = HandlerRuntimeMode.INBOUND;
@@ -274,7 +274,7 @@ describe('HandlerRuntime', () => {
     })
     it('should fail to start without a port in inbound mode', () => {
         process.env.WORKFLOW_ENGINE_MODE = HandlerRuntimeMode.INBOUND;
-        expect(() => new HandlerRuntime(handlerRuntimeConfig)).toThrow('WEBSOCKET_PORT is required in inbound mode');
+        expect(() => new HandlerRuntime(handlerRuntimeConfig)).toThrow('KA140631: WEBSOCKET_PORT is required in inbound mode');
         delete process.env.WORKFLOW_ENGINE_MODE;
     })
     it('should allow setting and getting the active handler context', async () => {
