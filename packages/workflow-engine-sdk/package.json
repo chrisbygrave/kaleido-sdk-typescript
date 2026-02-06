@@ -29,7 +29,6 @@
   ],
   "author": "Kaleido, Inc.",
   "license": "Apache-2.0",
-  "private": true,
   "dependencies": {
     "exponential-backoff": "^3.1.1",
     "fast-json-patch": "^3.1.1",

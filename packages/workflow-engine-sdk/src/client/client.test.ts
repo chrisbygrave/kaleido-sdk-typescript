@@ -314,8 +314,7 @@ describe('WorkflowEngineClient', () => {
       });
 
       const error = new Error('Connection failed');
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (mockStart as any).mockRejectedValueOnce(error);
+      mockStart.mockRejectedValueOnce(error);
 
       await expect(client.connect()).rejects.toThrow('Connection failed');
       expect(mockStart).toHaveBeenCalledTimes(1);
@@ -327,8 +326,7 @@ describe('WorkflowEngineClient', () => {
         providerName: 'test-provider',
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (mockStart as any).mockResolvedValueOnce(undefined);
+      mockStart.mockResolvedValueOnce(undefined);
 
       await expect(client.connect()).resolves.toBeUndefined();
       expect(mockStart).toHaveBeenCalledTimes(1);
@@ -475,13 +473,11 @@ describe('WorkflowEngineClient', () => {
       });
 
       // First connection attempt fails
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (mockStart as any).mockRejectedValueOnce(new Error('Connection failed'));
+      mockStart.mockRejectedValueOnce(new Error('Connection failed'));
       await expect(client.connect()).rejects.toThrow('Connection failed');
 
       // Second attempt succeeds
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (mockStart as any).mockResolvedValueOnce(undefined);
+      mockStart.mockResolvedValueOnce(undefined);
       await client.connect();
 
       expect(mockStart).toHaveBeenCalledTimes(2);
