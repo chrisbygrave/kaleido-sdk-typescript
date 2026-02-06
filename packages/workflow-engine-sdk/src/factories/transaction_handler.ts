@@ -99,34 +99,6 @@ class TransactionHandlerBase<T extends WithStageDirector> implements Transaction
  * @param name Handler name
  * @param actionMap Map of action names to their configurations
  * @returns A TransactionHandlerFactory for chaining
- * 
- * @example
- * ```typescript
- * interface MyInput extends WithStageDirector {
- *   data: string;
- * }
- * 
- * const actionMap = new Map();
- * actionMap.set('process', {
- *   invocationMode: InvocationMode.PARALLEL,
- *   handler: async (request, input: MyInput) => {
- *     return {
- *       result: EvalResult.COMPLETE,
- *       output: { processed: input.data.toUpperCase() }
- *     };
- *   }
- * });
- * 
- * const handler = newDirectedTransactionHandler('processor', actionMap)
- *   .withInitFn(async (engAPI) => {
- *     // Initialize resources
- *   })
- *   .withCloseFn(() => {
- *     // Cleanup resources
- *   });
- * 
- * client.registerTransactionHandler('processor', handler);
- * ```
  */
 export function newDirectedTransactionHandler<T extends WithStageDirector>(
   name: string,
