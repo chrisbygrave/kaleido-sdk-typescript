@@ -2,14 +2,14 @@
   "name": "@kaleido-io/workflow-engine-sdk",
   "version": "1.0.0",
   "description": "TypeScript SDK for Kaleido Workflow Engine",
+  "type": "module",
   "main": "dist/src/index.js",
   "module": "dist-esm/src/index.js",
   "types": "dist/src/index.d.ts",
-  "type": "module",
   "scripts": {
     "prebuild": "npm run clean && npm run lint",
-    "build": "tsc && tsc -p tsconfig.esm.json",
-    "build:cjs": "tsc",
+    "build": "tsc && npm run build:cjs && npm run build:esm",
+    "build:cjs": "tsc && cp cjs-package-template.json dist/package.json",
     "build:esm": "tsc -p tsconfig.esm.json",
     "postbuild": "tsc-esm-fix --target='dist-esm'",
     "clean": "rm -rf dist && rm -rf dist-esm",
@@ -72,8 +72,7 @@
     "template/**/*",
     "!template/node_modules/**/*",
     "README.md",
-    "LICENSE",
-    "CHANGELOG.md"
+    "LICENSE"
   ],
   "exports": {
     ".": {
