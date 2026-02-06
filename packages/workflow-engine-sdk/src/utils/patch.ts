@@ -24,7 +24,7 @@ export const apply = (state: unknown, patch: Patch) => {
   if (!patch || patch.length === 0) {
     return state;
   }
-  // Our PatchOp[] is structurally compatible with Operation[]
+
   const { newDocument: newState } = applyPatch(state, patch as fastJsonPatch.Operation[]);
   return newState;
 };

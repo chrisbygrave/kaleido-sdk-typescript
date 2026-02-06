@@ -99,13 +99,8 @@ describe('WorkflowEngineClient', () => {
       new WorkflowEngineClient(config);
 
       expect(HandlerRuntime).toHaveBeenCalledWith({
-        url: undefined,
         providerName: 'test-provider',
         providerMetadata: { version: '1.0.0' },
-        authToken: undefined,
-        authHeaderName: undefined,
-        headers: undefined,
-        options: undefined,
         reconnectDelay: 2000,
         maxAttempts: 5,
       });

@@ -36,7 +36,7 @@
     "handlers",
     "providers"
   ],
-  "author": "Kaleido, Inc.",
+  "author": "Kaleido",
   "license": "Apache-2.0",
   "dependencies": {
     "exponential-backoff": "^3.1.1",

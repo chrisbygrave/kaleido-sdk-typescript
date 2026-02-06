@@ -18,14 +18,8 @@
 /**
  * Core types and builder for Flow definitions in the Workflow Engine
  */
- 
-export type JSONAny = any;
 
-export interface KldResourceBase {
-  id?: string;
-  created?: string;
-  updated?: string;
-}
+export type JSONAny = any;
 
 /** Represents the type of a flow stage */
 export type FlowStageType = string;
@@ -61,7 +55,10 @@ export interface FlowVersionEmbedded {
 }
 
 /** Complete flow resource including base fields */
-export interface Flow extends KldResourceBase, FlowInput {
+export interface Flow extends FlowInput {
+  id?: string;
+  created?: string;
+  updated?: string;
   // Embedded version fields (not nested)
   version?: string;
   versionDescription?: string;
@@ -122,7 +119,7 @@ export interface FlowOperation {
   type: FlowOperationType;
   sequenceMap?: FlowMapping;
   stage?: string;
-  stateUpdates?: any; 
+  stateUpdates?: any;
   inputSchema?: JSONAny;
   outputSchema?: JSONAny;
   outputMap?: FlowMapping;
