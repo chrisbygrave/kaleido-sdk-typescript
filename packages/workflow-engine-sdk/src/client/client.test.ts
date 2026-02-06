@@ -18,7 +18,7 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { WorkflowEngineClient, WorkflowEngineClientConfig } from './client';
 import { HandlerRuntime } from '../runtime/handler_runtime';
-import { TransactionHandler, EventSource } from '../interfaces/handlers';
+import { TransactionHandler, EventSource, EventProcessor } from '../interfaces/handlers';
 
 jest.mock('../runtime/handler_runtime');
 
@@ -26,6 +26,7 @@ describe('WorkflowEngineClient', () => {
   let mockRuntime: jest.Mocked<HandlerRuntime>;
   let mockRegisterTransactionHandler: jest.Mock;
   let mockRegisterEventSource: jest.Mock;
+  let mockRegisterEventProcessor: jest.Mock;
   let mockStart: jest.Mock<() => Promise<void>>;
   let mockStop: jest.Mock<() => void>;
   let mockIsWebSocketConnected: jest.Mock<() => boolean>;
@@ -37,6 +38,7 @@ describe('WorkflowEngineClient', () => {
     // Create mock methods
     mockRegisterTransactionHandler = jest.fn();
     mockRegisterEventSource = jest.fn();
+    mockRegisterEventProcessor = jest.fn();
     mockStart = jest.fn();
     mockStop = jest.fn();
     mockIsWebSocketConnected = jest.fn();
@@ -45,6 +47,7 @@ describe('WorkflowEngineClient', () => {
     mockRuntime = {
       registerTransactionHandler: mockRegisterTransactionHandler,
       registerEventSource: mockRegisterEventSource,
+      registerEventProcessor: mockRegisterEventProcessor,
       start: mockStart,
       stop: mockStop,
       isWebSocketConnected: mockIsWebSocketConnected,
@@ -242,6 +245,55 @@ describe('WorkflowEngineClient', () => {
     });
   });
 
+  describe('registerEventProcessor', () => {
+    it('should delegate to runtime.registerEventProcessor', () => {
+      const client = new WorkflowEngineClient({
+        url: 'ws://localhost:5503/ws',
+        providerName: 'test-provider',
+      });
+
+      const mockEventProcessor: EventProcessor = {
+        name: () => 'test-processor',
+        init: jest.fn(),
+        close: jest.fn(),
+        eventProcessorBatch: jest.fn(),
+      } as any;
+
+      client.registerEventProcessor('test-processor', mockEventProcessor);
+
+      expect(mockRegisterEventProcessor).toHaveBeenCalledTimes(1);
+      expect(mockRegisterEventProcessor).toHaveBeenCalledWith('test-processor', mockEventProcessor);
+    });
+
+    it('should allow registering multiple event processors', () => {
+      const client = new WorkflowEngineClient({
+        url: 'ws://localhost:5503/ws',
+        providerName: 'test-provider',
+      });
+
+      const processor1: EventProcessor = {
+        name: () => 'processor1',
+        init: jest.fn(),
+        close: jest.fn(),
+        eventProcessorBatch: jest.fn(),
+      } as any;
+
+      const processor2: EventProcessor = {
+        name: () => 'processor2',
+        init: jest.fn(),
+        close: jest.fn(),
+        eventProcessorBatch: jest.fn(),
+      } as any;
+
+      client.registerEventProcessor('processor1', processor1);
+      client.registerEventProcessor('processor2', processor2);
+
+      expect(mockRegisterEventProcessor).toHaveBeenCalledTimes(2);
+      expect(mockRegisterEventProcessor).toHaveBeenNthCalledWith(1, 'processor1', processor1);
+      expect(mockRegisterEventProcessor).toHaveBeenNthCalledWith(2, 'processor2', processor2);
+    });
+  });
+
   describe('connect', () => {
     it('should delegate to runtime.start', async () => {
       const client = new WorkflowEngineClient({
@@ -262,7 +314,7 @@ describe('WorkflowEngineClient', () => {
       });
 
       const error = new Error('Connection failed');
-       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (mockStart as any).mockRejectedValueOnce(error);
 
       await expect(client.connect()).rejects.toThrow('Connection failed');
@@ -275,7 +327,7 @@ describe('WorkflowEngineClient', () => {
         providerName: 'test-provider',
       });
 
-       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (mockStart as any).mockResolvedValueOnce(undefined);
 
       await expect(client.connect()).resolves.toBeUndefined();
@@ -423,12 +475,12 @@ describe('WorkflowEngineClient', () => {
       });
 
       // First connection attempt fails
-       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (mockStart as any).mockRejectedValueOnce(new Error('Connection failed'));
       await expect(client.connect()).rejects.toThrow('Connection failed');
 
       // Second attempt succeeds
-       
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (mockStart as any).mockResolvedValueOnce(undefined);
       await client.connect();
 

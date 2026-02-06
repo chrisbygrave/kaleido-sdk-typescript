@@ -19,8 +19,8 @@ import provider from '../../provider.js';
 
 export const stream = {
     "name": "event-echo-stream",
-    "description": "Listen for events from the custom event source and trigger echo-flow transactions",
-    "type": "transaction_dispatch",
+    "description": "Listen for events from the custom event source and pass them to the echo event processor",
+    "type": "event_stream",
     "config": {
         "pollingInterval": "2s"
     },
@@ -28,11 +28,6 @@ export const stream = {
     "listenerHandlerProvider": provider.name,
     "eventHandler": "echo",
     "eventHandlerProvider": provider.name,
-    "transactionTemplate": {
-        "workflow": "echo-flow",
-        "operation": "echo",
-        "jsonata": "{\n  \"input\": {\n    \"data\": data\n  }\n}\n"
-    },
     "postFilter": {
         "jsonata": "true"
     }

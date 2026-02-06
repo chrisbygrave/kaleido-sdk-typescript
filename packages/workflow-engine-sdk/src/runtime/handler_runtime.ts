@@ -25,11 +25,14 @@ import {
   WSHandleTransactionsResult,
   WSEventSourceConfig,
   WSListenerPollResult,
+  WSEventProcessorBatchResult,
+  WSEventProcessorBatchRequest,
 } from '../types/core';
 import {
   Handler,
   TransactionHandler,
   EventSource,
+  EventProcessor,
 } from '../interfaces/handlers';
 import { EngineClient } from './engine_client';
 import { newLogger } from '../log/logger';
@@ -75,6 +78,7 @@ export class HandlerRuntime {
   private transactionHandlers: Map<string, TransactionHandler> = new Map();
   private eventSources: Map<string, EventSource> = new Map();
   private eventSourceConfigs: Map<string, WSEventSourceConfig> = new Map();
+  private eventProcessors: Map<string, EventProcessor> = new Map();
 
   private reconnectResolve?: (value: void | PromiseLike<void>) => void;
   private reconnectReject?: (reason?: any) => void;
@@ -120,12 +124,20 @@ export class HandlerRuntime {
   }
 
   /**
+   * Register an event processor handler
+   */
+  registerEventProcessor(name: string, handler: EventProcessor): void {
+    this.eventProcessors.set(name, handler);
+  }
+
+  /**
    * Get all registered handlers
    */
   getAllHandlers(): Handler[] {
     return [
       ...Array.from(this.transactionHandlers.values()),
       ...Array.from(this.eventSources.values()),
+      ...Array.from(this.eventProcessors.values()),
     ];
   }
 
@@ -153,6 +165,10 @@ export class HandlerRuntime {
     for (const [name, handler] of this.eventSources.entries()) {
       await handler.init(this.engineClient);
       log.debug('Initialized event source', { name });
+    }
+    for (const [name, handler] of this.eventProcessors.entries()) {
+      await handler.init(this.engineClient);
+      log.debug('Initialized event processor', { name });
     }
 
     if (this.mode === HandlerRuntimeMode.INBOUND) {
@@ -190,6 +206,10 @@ export class HandlerRuntime {
     for (const [name, handler] of this.eventSources.entries()) {
       handler.close();
       log.debug('Closed event source', { name });
+    }
+    for (const [name, handler] of this.eventProcessors.entries()) {
+      handler.close();
+      log.debug('Closed event processor', { name });
     }
   }
 
@@ -353,7 +373,8 @@ export class HandlerRuntime {
     log.info('Registering provider and handlers', {
       provider: this.config.providerName,
       transactionHandlers: this.transactionHandlers.size,
-      eventSources: this.eventSources.size
+      eventSources: this.eventSources.size,
+      eventProcessors: this.eventProcessors.size
     });
 
     // Register provider
@@ -372,6 +393,11 @@ export class HandlerRuntime {
     // Register all event sources
     for (const name of this.eventSources.keys()) {
       this.registerHandler(name, WSHandlerType.EVENT_SOURCE);
+    }
+
+    // Register all event processors
+    for (const name of this.eventProcessors.keys()) {
+      this.registerHandler(name, WSHandlerType.EVENT_PROCESSOR);
     }
   }
 
@@ -394,6 +420,9 @@ export class HandlerRuntime {
     switch (msg.messageType) {
       case WSMessageType.HANDLE_TRANSACTIONS:
         this.handleTransactionsMessage(msg as WSHandleTransactions);
+        break;
+      case WSMessageType.EVENT_PROCESSOR_BATCH:
+        this.handleEventProcessorBatch(msg as WSEventProcessorBatchRequest);
         break;
       case WSMessageType.EVENT_SOURCE_CONFIG:
         this.handleEventSourceConfig(msg as WSEventSourceConfig);
@@ -455,6 +484,38 @@ export class HandlerRuntime {
       response.results = batch.transactions.map(() => ({
         error: getErrorMessage(error)
       }));
+    } finally {
+      this.clearActiveHandlerContext();
+    }
+
+    this.sendMessage(response);
+  }
+
+  private async handleEventProcessorBatch(batch: WSEventProcessorBatchRequest): Promise<void> {
+    log.debug('Handling event processor batch', {
+      handler: batch.handler,
+      batchId: batch.id,
+      count: batch.events.length
+    });
+
+    const response: WSEventProcessorBatchResult = {
+      messageType: WSMessageType.EVENT_PROCESSOR_BATCH_RESULT,
+      id: batch.id,
+      handler: batch.handler,
+      events: batch.events,
+    };
+    try {
+      const eventProcessor = this.eventProcessors.get(batch.handler || '');
+      if (eventProcessor) {
+        this.setActiveHandlerContext(batch.id, batch.authTokens || {});
+        await eventProcessor.eventProcessorBatch(response as any, batch as any);
+      } else {
+        response.error = `No event processor registered: ${batch.handler}`;
+        log.error(response.error);
+      }
+    } catch (error) {
+      log.error('Event processor batch failed', { handler: batch.handler, error });
+      response.error = getErrorMessage(error);
     } finally {
       this.clearActiveHandlerContext();
     }

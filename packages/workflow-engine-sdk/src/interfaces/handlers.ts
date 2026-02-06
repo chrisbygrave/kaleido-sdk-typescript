@@ -31,6 +31,8 @@ import {
   AsyncTransactionInput,
   IdempotentSubmitResult,
   HandlerEvent,
+  WSEventProcessorBatchRequest,
+  WSEventProcessorBatchResult,
 } from '../types/core';
 
 /**
@@ -74,6 +76,16 @@ export interface TransactionHandler extends Handler {
   transactionHandlerBatch(
     result: WSEvaluateReply,
     batch: WSEvaluateBatch
+  ): Promise<void>;
+}
+
+/**
+ * Event processor handler interface
+ */
+export interface EventProcessor extends Handler {
+  eventProcessorBatch(
+    result: WSEventProcessorBatchResult,
+    batch: WSEventProcessorBatchRequest
   ): Promise<void>;
 }
 

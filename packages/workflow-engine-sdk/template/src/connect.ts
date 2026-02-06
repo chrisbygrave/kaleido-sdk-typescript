@@ -24,9 +24,9 @@ import provider from './provider.js';
 
 import { actionMap as helloActionMap } from './samples/hello/handlers.js';
 import { actionMap as httpInvokeActionMap } from './samples/http-invoke/handlers.js';
-import { actionMap as echoActionMap } from './samples/event-source/echo-handler.js';
 import { eventSource } from './samples/event-source/event-source.js';
 import dotenv from 'dotenv';
+import { echoEventProcessor } from './samples/event-source/event-processor.js';
 
 dotenv.config();
 const wsUrl = `wss://${process.env.ACCOUNT}/endpoint/${process.env.ENVIRONMENT}/${process.env.WORKFLOW_ENGINE}/rest/ws`;
@@ -45,8 +45,7 @@ client.registerTransactionHandler('hello', helloHandler);
 const httpInvokeHandler = newDirectedTransactionHandler('http-invoke', httpInvokeActionMap);
 client.registerTransactionHandler('http-invoke', httpInvokeHandler);
 
-const echoEventHandler = newDirectedTransactionHandler('echo', echoActionMap);
-client.registerTransactionHandler('echo', echoEventHandler);
+client.registerEventProcessor('echo', echoEventProcessor);
 client.registerEventSource('my-listener', eventSource);
 
 await client.connect();

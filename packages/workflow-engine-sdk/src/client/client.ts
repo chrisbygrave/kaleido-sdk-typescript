@@ -16,7 +16,7 @@
 
 
 import { HandlerRuntime, HandlerRuntimeConfig } from '../runtime/handler_runtime';
-import { TransactionHandler, EventSource } from '../interfaces/handlers';
+import { TransactionHandler, EventSource, EventProcessor } from '../interfaces/handlers';
 
 export interface WorkflowEngineClientConfig {
   url?: string;
@@ -55,6 +55,10 @@ export class WorkflowEngineClient {
 
   registerEventSource(name: string, handler: EventSource): void {
     this.runtime.registerEventSource(name, handler);
+  }
+
+  registerEventProcessor(name: string, handler: EventProcessor): void {
+    this.runtime.registerEventProcessor(name, handler);
   }
 
   async connect(): Promise<void> {

@@ -1,14 +1,14 @@
 # Event source sample
 
-This example demonstrates how to set up a custom event source that generates events and triggers workflow transactions.
+This example demonstrates how to set up a custom event source that generates events and streams them to an event processor.
 
 ## Overview
 
 The event source sample consists of three main components:
 
 1. **Event Source** (`event-source.ts`) - Generates timestamped events at regular intervals
-2. **Workflow** (`flow.ts`) - Consumes events and processes the timestamped data
-3. **Transaction Dispatch Stream** (`stream.ts`) - Connects the event source to the workflow
+2. **Event Processor** (`event-processor.ts`) - Logs out any events it receives
+3. **Event Stream** (`stream.ts`) - Connects the event source to the event processor
 
 ## How it works
 
@@ -20,13 +20,13 @@ The event source (`event-source.ts`) generates a new timestamped event every ten
 - A topic (`my-topic`)
 - A data payload containing a message and timestamp
 
-### Transaction dispatch stream
+### Stream
 
-When an event is received from the event source, the stream (`stream.ts`)  automatically creates a new transaction in the `echo-flow` workflow, passing the event data as input.
+When an event is received from the event source, the stream (`stream.ts`) ensures that the event is passed on to the event processor handler. In this scenario, for simplicity, the event processor is part of the same provider, but this is not a requirement.
 
-### Workflow
+### Event processor
 
-The `echo-flow` workflow (`flow.ts`) is a simple workflow that consumes the data payload from the above events and produces a message with a formatted timestamp.
+The event processor (`event-processor.ts`) listens for batches of events and logs them out as they are received. It then updates the checkpoint to acknowledge the event shave been processed.
 
 ## Usage
 
@@ -35,18 +35,16 @@ The `echo-flow` workflow (`flow.ts`) is a simple workflow that consumes the data
    client.registerEventSource('my-listener', eventSource);
    ```
 
-2. Register the echo handler:
+2. Register the event processor:
    ```typescript
-   const echoEventHandler = newDirectedTransactionHandler('echo', echoActionMap);
-   client.registerTransactionHandler('echo', echoEventHandler);
+   client.registerEventProcessor('echo', echoEventProcessor);
    ```
 
 3. Start your application to register your provider and handlers with the workflow engine.
 
-4. Post the workflow and stream to the workflow engine using the utility scripts:
+4. Post the stream to the workflow engine using the utility scripts:
    ```bash
-   npm run create-workflow src/samples/event-source/flow.ts
    npm run create-stream src/samples/event-source/stream.ts
    ```
 
-Once configured, the event source will generate events every ten seconds, which will automatically trigger transactions in the echo-flow workflow.
+Once configured, the event source will generate events every ten seconds, which will result in the event processor being called.

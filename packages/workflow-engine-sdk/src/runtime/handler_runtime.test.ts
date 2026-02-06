@@ -41,8 +41,9 @@ jest.mock('./engine_client', () => ({
 
 import { HandlerRuntime, HandlerRuntimeConfig, HandlerRuntimeMode } from './handler_runtime';
 import { EngineClient } from './engine_client';
-import { EventSource, TransactionHandler } from '../interfaces/handlers';
+import { EventProcessor, EventSource, TransactionHandler } from '../interfaces/handlers';
 import { WSMessageType } from '@kaleido-io/workflow-engine-sdk';
+import { WSEventProcessorBatchRequest } from '../types/core';
 
 const handlerRuntimeConfig: HandlerRuntimeConfig = {
     providerName: 'test-provider',
@@ -70,6 +71,20 @@ const mockTransactionHandlerError: TransactionHandler = {
     init: jest.fn(() => Promise.resolve()),
     close: jest.fn(() => Promise.resolve()),
     transactionHandlerBatch: jest.fn(() => Promise.reject(new Error('test-error'))),
+};
+
+const mockEventProcessor: EventProcessor = {
+    name: () => 'test-event-processor',
+    init: jest.fn(() => Promise.resolve()),
+    close: jest.fn(() => Promise.resolve()),
+    eventProcessorBatch: jest.fn(() => Promise.resolve()),
+};
+
+const mockEventProcessorError: EventProcessor = {
+    name: () => 'test-event-processor-error',
+    init: jest.fn(() => Promise.resolve()),
+    close: jest.fn(() => Promise.resolve()),
+    eventProcessorBatch: jest.fn(() => Promise.reject(new Error('event-processor-error'))),
 };
 
 const mockEventSource: EventSource = {
@@ -182,12 +197,14 @@ describe('HandlerRuntime', () => {
         handlerRuntime = new HandlerRuntime(handlerRuntimeConfig);
         handlerRuntime.registerTransactionHandler('test-transaction-handler', mockTransactionHandler);
         handlerRuntime.registerEventSource('test-event-source', mockEventSource);
-        expect(handlerRuntime.getAllHandlers()).toEqual([mockTransactionHandler, mockEventSource]);
+        handlerRuntime.registerEventProcessor('test-event-processor', mockEventProcessor);
+        expect(handlerRuntime.getAllHandlers()).toEqual([mockTransactionHandler, mockEventSource, mockEventProcessor]);
     })
     it('should initialize the handlers on start', async () => {
         handlerRuntime = new HandlerRuntime(handlerRuntimeConfig);
         handlerRuntime.registerTransactionHandler('test-transaction-handler', mockTransactionHandler);
         handlerRuntime.registerEventSource('test-event-source', mockEventSource);
+        handlerRuntime.registerEventProcessor('test-event-processor', mockEventProcessor);
         await handlerRuntime.start();
         // Wait a bit for the connection to establish and handlers to initialize
         await new Promise(resolve => setTimeout(resolve, 100));
@@ -195,6 +212,7 @@ describe('HandlerRuntime', () => {
         handlerRuntime.stop();
         expect(mockTransactionHandler.init).toHaveBeenCalledTimes(1);
         expect(mockEventSource.init).toHaveBeenCalledTimes(1);
+        expect(mockEventProcessor.init).toHaveBeenCalledTimes(1);
     })
     it('should default the auth header', async () => {
         const config = { ...handlerRuntimeConfig }
@@ -324,6 +342,86 @@ describe('HandlerRuntime', () => {
         await new Promise(resolve => setTimeout(resolve, 100));
         expect(mockLogger.warn).not.toHaveBeenCalled();
         expect(mockLogger.error).not.toHaveBeenCalled();
+    })
+    it('should handle an event processor batch message', async () => {
+        handlerRuntime = new HandlerRuntime(handlerRuntimeConfig);
+        handlerRuntime.registerEventProcessor('test-event-processor', mockEventProcessor);
+        handlerRuntime.start();
+        // Wait a bit for the server to start
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(handlerRuntime.isWebSocketConnected()).toBe(true);
+        const request: WSEventProcessorBatchRequest = {
+            id: 'test-request-id',
+            handler: 'test-event-processor',
+            messageType: WSMessageType.EVENT_PROCESSOR_BATCH,
+            streamName: 'test-stream-name',
+            streamId: 'test-stream-id',
+            events: [{ idempotencyKey: 'test-event-id', topic: 'test-topic', data: 'test-data' }]
+        };
+        connectedSocket?.send(JSON.stringify(request));
+        handlerRuntime.stop();
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(mockLogger.warn).not.toHaveBeenCalled();
+        expect(mockLogger.error).not.toHaveBeenCalled();
+        expect(mockEventProcessor.eventProcessorBatch).toHaveBeenCalledTimes(1);
+        expect(mockEventProcessor.eventProcessorBatch).toHaveBeenCalledWith(expect.any(Object), request);
+    })
+    it('should handle an error for a missing event processor', async () => {
+        handlerRuntime = new HandlerRuntime(handlerRuntimeConfig);
+        handlerRuntime.start();
+        // Wait a bit for the server to start
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(handlerRuntime.isWebSocketConnected()).toBe(true);
+        const request: WSEventProcessorBatchRequest = {
+            id: 'test-request-id',
+            handler: 'test-event-processor',
+            messageType: WSMessageType.EVENT_PROCESSOR_BATCH,
+            streamName: 'test-stream-name',
+            streamId: 'test-stream-id',
+            events: [{ idempotencyKey: 'test-event-id', topic: 'test-topic', data: 'test-data' }]
+        };
+        connectedSocket?.send(JSON.stringify(request));
+        handlerRuntime.stop();
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(mockLogger.error).toHaveBeenCalledWith('No event processor registered: test-event-processor');
+    })
+    it('should handle an error when event processor handler is undefined', async () => {
+        handlerRuntime = new HandlerRuntime(handlerRuntimeConfig);
+        handlerRuntime.start();
+        // Wait a bit for the server to start
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(handlerRuntime.isWebSocketConnected()).toBe(true);
+        const request: WSEventProcessorBatchRequest = {
+            id: 'test-request-id',
+            messageType: WSMessageType.EVENT_PROCESSOR_BATCH,
+            streamName: 'test-stream-name',
+            streamId: 'test-stream-id',
+            events: [{ idempotencyKey: 'test-event-id', topic: 'test-topic', data: 'test-data' }]
+        };
+        connectedSocket?.send(JSON.stringify(request));
+        handlerRuntime.stop();
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(mockLogger.error).toHaveBeenCalledWith('No event processor registered: undefined');
+    })
+    it('should handle an error from an event processor batch', async () => {
+        handlerRuntime = new HandlerRuntime(handlerRuntimeConfig);
+        handlerRuntime.registerEventProcessor('test-event-processor-error', mockEventProcessorError);
+        handlerRuntime.start();
+        // Wait a bit for the server to start
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(handlerRuntime.isWebSocketConnected()).toBe(true);
+        const request: WSEventProcessorBatchRequest = {
+            id: 'test-request-id',
+            handler: 'test-event-processor-error',
+            messageType: WSMessageType.EVENT_PROCESSOR_BATCH,
+            streamName: 'test-stream-name',
+            streamId: 'test-stream-id',
+            events: [{ idempotencyKey: 'test-event-id', topic: 'test-topic', data: 'test-data' }]
+        };
+        connectedSocket?.send(JSON.stringify(request));
+        handlerRuntime.stop();
+        await new Promise(resolve => setTimeout(resolve, 100));
+        expect(mockLogger.error).toHaveBeenCalledWith('Event processor batch failed', { handler: 'test-event-processor-error', error: expect.any(Error) });
     })
     it('should handle an error for a missing transaction handler', async () => {
         handlerRuntime = new HandlerRuntime(handlerRuntimeConfig);

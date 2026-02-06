@@ -174,6 +174,18 @@ export interface WSHandlerEnvelope {
   authTokens?: Record<string, string>;
 }
 
+export interface WSEventProcessorBatchRequest extends WSHandlerEnvelope {
+  streamName: string;
+  streamId: string;
+  events: ListenerEvent[];
+  authRef?: string;
+}
+
+export interface WSEventProcessorBatchResult extends WSHandlerEnvelope {
+  checkpoint?: any;
+  events: ListenerEvent[];
+}
+
 /**
  * Batch of requests for evaluation
  */
