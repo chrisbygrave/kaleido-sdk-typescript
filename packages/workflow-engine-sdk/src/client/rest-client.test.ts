@@ -18,11 +18,11 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import {
   WorkflowEngineRestClient,
-  WorkflowEngineRestClientConfig,
   CreateWorkflowRequest,
   CreateTransactionRequest,
   CreateStreamRequest,
 } from './rest-client';
+import { WorkflowEngineClientConfig } from './client';
 
 /**
  * Helper function to create mock Response objects for testing
@@ -80,15 +80,43 @@ describe('WorkflowEngineRestClient', () => {
 
   describe('constructor', () => {
     it('should create client with explicit config', () => {
-      const config: WorkflowEngineRestClientConfig = {
-        baseUrl: 'https://test.example.com/rest',
-        keyName: 'test-key',
-        keyValue: 'test-value',
+      const config: WorkflowEngineClientConfig = {
+        url: 'wss://test.example.com/rest/ws',
+        providerName: 'test-provider',
+        authToken: 'test-token',
+        authHeaderName: 'Authorization'
       };
 
       client = new WorkflowEngineRestClient(config);
 
       expect(client).toBeInstanceOf(WorkflowEngineRestClient);
+      expect(client.getWorkflowsEndpoint()).toBe('https://test.example.com/rest/api/v1/workflows');
+    });
+    it('should handle non-SSL URLs', () => {
+      const config: WorkflowEngineClientConfig = {
+        url: 'ws://test.example.com/rest/ws',
+        providerName: 'test-provider',
+        authToken: 'test-token',
+        authHeaderName: 'Authorization'
+      };
+
+      client = new WorkflowEngineRestClient(config);
+
+      expect(client).toBeInstanceOf(WorkflowEngineRestClient);
+      expect(client.getWorkflowsEndpoint()).toBe('http://test.example.com/rest/api/v1/workflows');
+    });
+    it('should handle missing rest segments', () => {
+      const config: WorkflowEngineClientConfig = {
+        url: 'http://test.example.com',
+        providerName: 'test-provider',
+        authToken: 'test-token',
+        authHeaderName: 'Authorization'
+      };
+
+      client = new WorkflowEngineRestClient(config);
+
+      expect(client).toBeInstanceOf(WorkflowEngineRestClient);
+      expect(client.getWorkflowsEndpoint()).toBe('http://test.example.com/rest/api/v1/workflows');
     });
 
     it('should create client from environment variables', () => {
@@ -133,10 +161,11 @@ describe('WorkflowEngineRestClient', () => {
       process.env.KEY_NAME = 'env-key';
       process.env.KEY_VALUE = 'env-value';
 
-      const config: WorkflowEngineRestClientConfig = {
-        baseUrl: 'https://explicit.example.com/rest',
-        keyName: 'explicit-key',
-        keyValue: 'explicit-value',
+      const config: WorkflowEngineClientConfig = {
+        url: 'wss://explicit.example.com/rest/ws',
+        providerName: 'test-provider',
+        authToken: 'test-token',
+        authHeaderName: 'Authorization'
       };
 
       client = new WorkflowEngineRestClient(config);
@@ -147,7 +176,8 @@ describe('WorkflowEngineRestClient', () => {
   describe('createWorkflow', () => {
     beforeEach(() => {
       client = new WorkflowEngineRestClient({
-        baseUrl: 'https://test.example.com/rest',
+        url: 'wss://test.example.com/rest/ws',
+        providerName: 'test-provider',
       });
     });
 
@@ -216,9 +246,10 @@ describe('WorkflowEngineRestClient', () => {
 
     it('should include authorization header when credentials are provided', async () => {
       client = new WorkflowEngineRestClient({
-        baseUrl: 'https://test.example.com/rest',
-        keyName: 'test-user',
-        keyValue: 'test-pass',
+        url: 'wss://test.example.com/rest/ws',
+        providerName: 'test-provider',
+        authToken: 'test-token',
+        authHeaderName: 'Authorization'
       });
 
       const workflowRequest: CreateWorkflowRequest = {
@@ -235,12 +266,11 @@ describe('WorkflowEngineRestClient', () => {
 
       await client.createWorkflow(workflowRequest);
 
-      const authHeader = Buffer.from('test-user:test-pass').toString('base64');
       expect(mockFetch).toHaveBeenCalledWith(
         expect.any(String),
         expect.objectContaining({
           headers: expect.objectContaining({
-            'Authorization': `basic ${authHeader}`,
+            'Authorization': 'test-token',
           }),
         })
       );
@@ -269,7 +299,8 @@ describe('WorkflowEngineRestClient', () => {
   describe('deleteWorkflow', () => {
     beforeEach(() => {
       client = new WorkflowEngineRestClient({
-        baseUrl: 'https://test.example.com/rest',
+        url: 'wss://test.example.com/rest/ws',
+        providerName: 'test-provider',
       });
     });
 
@@ -329,7 +360,8 @@ describe('WorkflowEngineRestClient', () => {
   describe('createTransaction', () => {
     beforeEach(() => {
       client = new WorkflowEngineRestClient({
-        baseUrl: 'https://test.example.com/rest',
+        url: 'wss://test.example.com/rest/ws',
+        providerName: 'test-provider',
       });
     });
 
@@ -419,7 +451,8 @@ describe('WorkflowEngineRestClient', () => {
   describe('deleteTransaction', () => {
     beforeEach(() => {
       client = new WorkflowEngineRestClient({
-        baseUrl: 'https://test.example.com/rest',
+        url: 'wss://test.example.com/rest/ws',
+        providerName: 'test-provider',
       });
     });
 
@@ -479,7 +512,8 @@ describe('WorkflowEngineRestClient', () => {
   describe('createStream', () => {
     beforeEach(() => {
       client = new WorkflowEngineRestClient({
-        baseUrl: 'https://test.example.com/rest',
+        url: 'wss://test.example.com/rest/ws',
+        providerName: 'test-provider',
       });
     });
 
@@ -595,7 +629,8 @@ describe('WorkflowEngineRestClient', () => {
   describe('deleteStream', () => {
     beforeEach(() => {
       client = new WorkflowEngineRestClient({
-        baseUrl: 'https://test.example.com/rest',
+        url: 'wss://test.example.com/rest/ws',
+        providerName: 'test-provider',
       });
     });
 
@@ -672,7 +707,8 @@ describe('WorkflowEngineRestClient', () => {
   describe('startStream', () => {
     beforeEach(() => {
       client = new WorkflowEngineRestClient({
-        baseUrl: 'https://test.example.com/rest',
+        url: 'wss://test.example.com/rest/ws',
+        providerName: 'test-provider',
       });
     });
 
@@ -744,7 +780,8 @@ describe('WorkflowEngineRestClient', () => {
   describe('stopStream', () => {
     beforeEach(() => {
       client = new WorkflowEngineRestClient({
-        baseUrl: 'https://test.example.com/rest',
+        url: 'wss://test.example.com/rest/ws',
+        providerName: 'test-provider',
       });
     });
 
@@ -816,9 +853,10 @@ describe('WorkflowEngineRestClient', () => {
   describe('integration scenarios', () => {
     beforeEach(() => {
       client = new WorkflowEngineRestClient({
-        baseUrl: 'https://test.example.com/rest',
-        keyName: 'test-user',
-        keyValue: 'test-pass',
+        url: 'wss://test.example.com/rest/ws',
+        providerName: 'test-provider',
+        authToken: 'test-token',
+        authHeaderName: 'Authorization'
       });
     });
 

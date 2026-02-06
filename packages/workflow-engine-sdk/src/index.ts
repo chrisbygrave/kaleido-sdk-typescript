@@ -23,14 +23,13 @@
 // Client Entry Point
 // ============================================================================
 
-export { 
-  WorkflowEngineClient, 
+export {
+  WorkflowEngineClient,
   WorkflowEngineClientConfig,
 } from './client/client';
 
 export {
   WorkflowEngineRestClient,
-  WorkflowEngineRestClientConfig,
   CreateWorkflowRequest,
   CreateWorkflowResponse,
   CreateTransactionRequest,
@@ -61,13 +60,13 @@ export * from './interfaces/messages';
 // ============================================================================
 
 // Transaction handler factory
-export { 
+export {
   newDirectedTransactionHandler,
   TransactionHandlerFactory,
 } from './factories/transaction_handler';
 
 // Event source factory
-export { 
+export {
   newEventSource,
   EventSourceFactory,
   EventSourceConf,
@@ -92,7 +91,7 @@ export * from './config/config';
 // ============================================================================
 
 // JSON Patch utilities
-export { 
+export {
   apply,
   addOp,
   removeOp,
@@ -106,7 +105,7 @@ export {
 export * from './log/logger';
 
 export * from './i18n/errors';
- 
+
 export type { HandlerBindingTarget } from './types/flows';
 
 export { HandlerRuntimeMode } from './runtime/handler_runtime';

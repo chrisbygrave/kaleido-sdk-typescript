@@ -25,19 +25,11 @@
  */
 
 import { newError, SDKErrors } from '../i18n/errors';
+import { WorkflowEngineClientConfig } from './client';
 
 // ============================================================================
 // TypeScript Interfaces
 // ============================================================================
-
-/**
- * Base configuration for REST client
- */
-export interface WorkflowEngineRestClientConfig {
-  baseUrl?: string;
-  keyName?: string;
-  keyValue?: string;
-}
 
 /**
  * Transaction input payload
@@ -169,12 +161,13 @@ export interface UpdateStreamRequest {
  */
 export class WorkflowEngineRestClient {
   private baseUrl: string;
-  private keyName?: string;
-  private keyValue?: string;
+  private authToken?: string;
+  private authHeaderName: string;
+  private headers?: Record<string, string>;
 
-  constructor(config?: WorkflowEngineRestClientConfig) {
+  constructor(config?: WorkflowEngineClientConfig) {
     // Build base URL from environment variables if not provided
-    if (!config?.baseUrl) {
+    if (!config?.url) {
       if (!process.env.ACCOUNT) {
         throw newError(SDKErrors.MsgSDKAccountNotSet);
       }
@@ -186,63 +179,68 @@ export class WorkflowEngineRestClient {
       }
       this.baseUrl = `https://${process.env.ACCOUNT}/endpoint/${process.env.ENVIRONMENT}/${process.env.WORKFLOW_ENGINE}/rest`;
     } else {
-      this.baseUrl = config.baseUrl;
+      let restUrl = config.url.replace(/\/ws$/, '');
+      if (!restUrl.endsWith('/rest')) {
+        restUrl += '/rest';
+      }
+      if (restUrl.startsWith('ws://')) {
+        restUrl = restUrl.replace('ws://', 'http://');
+      } else if (config.url.startsWith('wss://')) {
+        restUrl = restUrl.replace('wss://', 'https://');
+      }
+      this.baseUrl = restUrl;
     }
-
-    this.keyName = config?.keyName || process.env.KEY_NAME;
-    this.keyValue = config?.keyValue || process.env.KEY_VALUE;
+    if (!config?.authToken) {
+      if (process.env.KEY_NAME && process.env.KEY_VALUE) {
+        this.authToken = `basic ${Buffer.from(`${process.env.KEY_NAME}:${process.env.KEY_VALUE}`).toString('base64')}`;
+      }
+    } else {
+      this.authToken = config?.authToken;
+    }
+    this.authHeaderName = config?.authHeaderName || 'Authorization';
+    this.headers = config?.headers;
   }
 
   /**
    * Gets the full REST API endpoint URL for workflows
    */
-  private getWorkflowsEndpoint(): string {
+  public getWorkflowsEndpoint(): string {
     return `${this.baseUrl}/api/v1/workflows`;
   }
 
   /**
    * Gets the full REST API endpoint URL for a specific workflow
    */
-  private getWorkflowEndpoint(workflowNameOrId: string): string {
+  public getWorkflowEndpoint(workflowNameOrId: string): string {
     return `${this.baseUrl}/api/v1/workflows/${encodeURIComponent(workflowNameOrId)}`;
   }
 
   /**
    * Gets the full REST API endpoint URL for transactions
    */
-  private getTransactionsEndpoint(): string {
+  public getTransactionsEndpoint(): string {
     return `${this.baseUrl}/api/v1/transactions`;
   }
 
   /**
    * Gets the full REST API endpoint URL for a specific transaction
    */
-  private getTransactionEndpoint(idempotencyKeyOrId: string): string {
+  public getTransactionEndpoint(idempotencyKeyOrId: string): string {
     return `${this.baseUrl}/api/v1/transactions/${encodeURIComponent(idempotencyKeyOrId)}`;
   }
 
   /**
    * Gets the full REST API endpoint URL for streams
    */
-  private getStreamsEndpoint(): string {
+  public getStreamsEndpoint(): string {
     return `${this.baseUrl}/api/v1/streams`;
   }
 
   /**
    * Gets the full REST API endpoint URL for a specific stream
    */
-  private getStreamEndpoint(streamNameOrId: string): string {
+  public getStreamEndpoint(streamNameOrId: string): string {
     return `${this.baseUrl}/api/v1/streams/${encodeURIComponent(streamNameOrId)}`;
-  }
-
-  /**
-   * Gets the authorization header if credentials are available
-   */
-  private getAuthHeader(): string | undefined {
-    if (this.keyName && this.keyValue) {
-      return `basic ${Buffer.from(`${this.keyName}:${this.keyValue}`).toString('base64')}`;
-    }
-    return undefined;
   }
 
   /**
@@ -264,9 +262,8 @@ export class WorkflowEngineRestClient {
     }
 
     // Add authorization if credentials are available
-    const authHeader = this.getAuthHeader();
-    if (authHeader) {
-      headers['Authorization'] = authHeader;
+    if (this.authToken) {
+      headers[this.authHeaderName] = this.authToken;
     }
 
     const response = await fetch(url, {
