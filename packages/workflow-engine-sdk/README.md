@@ -2,6 +2,14 @@
 
 A TypeScript SDK for building handlers that integrate with the Kaleido Workflow Engine. Build transaction handlers and event sources that process workflows with full type safety and automatic reconnection.
 
+**What is the Workflow Engine?** The Kaleido Workflow Engine is a service on the Kaleido Platform that runs workflow definitions (stages and transitions). Each transaction in a workflow runs that workflow and is driven through its stages. At each stage you can bind to a **transaction handler** (invoked by the engine over WebSocket), stages can also wait to consume events from  **event sources** or event produce it's events for event-driven flows. These events can then be consumed externally throught **event processors**. This SDK allows you to build them in TypeScript and run your code connected to the platform.
+
+**This SDK lets you create a provider.** A provider is your application that connects to the workflow engine and advertises what it can do. The engine discovers providers over WebSocket and binds them to workflow stages and streams. A provider exposes:
+
+- **Handlers** — Transaction handlers that the engine invokes when a transaction reaches a stage bound to your provider; your code evaluates the request (e.g. call an API, run logic), returns a result and optional state updates, and the engine moves the transaction to the next stage or failure stage.
+- **Event sources** — Polling or push sources that produce events (e.g. from an external system or queue); the engine polls your code, you return new events and a checkpoint, and the engine delivers those events through streams to workflows and event processors.
+- **Event processors** — Consumers that receive batches of events from streams; the engine sends you events that matched a stream’s definition, and you process them (e.g. persist, forward) and optionally update checkpoints.
+
 ## Quick Start
 
 ### Installation

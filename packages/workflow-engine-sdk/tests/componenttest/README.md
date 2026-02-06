@@ -4,7 +4,7 @@ Component tests for the Workflow Engine TypeScript SDK that test against a live 
 
 ## Overview
 
-These tests mirror the Go component tests found in `workflow-engine/test/componenttest/` and use the same workflow YAML files. They verify end-to-end functionality including:
+These tests mirror the workflow engine component test suite and use the same workflow YAML files. They verify end-to-end functionality including:
 
 - Handler registration and execution
 - WebSocket communication
@@ -123,7 +123,7 @@ Workflow YAML files are located in `tests/componenttest/workflows/`:
 - `three-ringed-circus_with_profile.yaml` - With config profile support
 - `snap.yaml` - Card game with triggers and events
 
-These files are copied from `workflow-engine/test/componenttest/workflows/` and should remain identical to ensure consistency between Go and TypeScript test behavior.
+These files are copied from `workflow-engine/test/componenttest/workflows/` and should remain identical to ensure consistency with the workflow engine test suite.
 
 ## Cleanup
 
@@ -220,12 +220,12 @@ const eventSource = {
 sdk.registerEventSource('my-source', eventSource);
 ```
 
-## Differences from Go Tests
+## Implementation notes
 
-1. **No Test Engine Management**: TS tests assume engine is already running
-2. **HTTP API for Workflows**: TS submits YAML via HTTP, Go uses helper methods
-3. **Async/Await**: TS uses promises, Go uses channels and goroutines
-4. **Cleanup**: TS uses `afterAll` with fetch DELETE requests
+1. **No Test Engine Management**: Tests assume the workflow engine is already running
+2. **HTTP API for Workflows**: Workflows are submitted via HTTP (YAML)
+3. **Async flow**: Uses promises for async/await
+4. **Cleanup**: Uses `afterAll` with fetch DELETE requests
 
 ## Debugging
 
@@ -253,7 +253,7 @@ To debug failing tests:
 
 When adding new component tests:
 
-1. Mirror the corresponding Go test structure
+1. Mirror the workflow engine component test structure
 2. Use the same workflow YAML files
 3. Add cleanup in `afterAll`
 4. Set appropriate timeouts

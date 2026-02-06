@@ -212,7 +212,7 @@ describe('Snap Component Test', () => {
       path.join(__dirname, 'workflows/snap.yaml'),
       'utf8'
     );
-    // Add name and version with unique suffix (Go tests use DropRecreateDB, we use unique names)
+    // Add name and version with unique suffix to avoid conflicts (tests use unique names, not DB drop/recreate)
     const uniqueSuffix = Date.now();
     const workflowYAMLWithMeta = `name: snap-${uniqueSuffix}\nversion: "1.0"\n${workflowYAML}`;
 

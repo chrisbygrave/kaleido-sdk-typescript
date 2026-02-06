@@ -16,8 +16,7 @@
 
 
 /**
- * Core types and enums for the Workflow Engine TypeScript SDK
- * This matches the Go enginesdk implementation
+ * Core types and enums for the Workflow Engine TypeScript SDK.
  */
 
 export enum EvalResult {
@@ -201,14 +200,14 @@ export interface WSEvaluateReply extends WSHandlerEnvelope {
 }
 
 /**
- * Transaction handling request (matches Go WSHandleTransactions)
+ * Transaction handling request (batch of evaluate requests).
  */
 export interface WSHandleTransactions extends WSHandlerEnvelope {
   transactions: WSEvaluateRequest[];
 }
 
 /**
- * Transaction handling response (matches Go WSHandleTransactionsResult)
+ * Transaction handling response (batch evaluate results).
  */
 export interface WSHandleTransactionsResult extends WSHandlerEnvelope {
   results: WSEvaluateReplyResult[];

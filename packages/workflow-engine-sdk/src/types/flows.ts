@@ -72,13 +72,13 @@ export interface Flow extends KldResourceBase, FlowInput {
   constants?: { [key: string]: JSONAny };
 }
 
-/** Handler binding target - matches Go HandlerBindingTarget struct */
+/** Handler binding target (provider and handler name). */
 export interface HandlerBindingTarget {
   provider?: string;
   providerHandler?: string;
 }
 
-/** Flow input with inline version information - matches Go FlowInputInlineVersion */
+/** Flow input with inline version information. */
 export interface FlowInputInlineVersion extends FlowVersionEmbedded, FlowInput, FlowDefinition {
   version?: string;
   versionDescription?: string;
