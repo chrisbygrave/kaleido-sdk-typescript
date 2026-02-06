@@ -236,8 +236,7 @@ describe('HandlerRuntime', () => {
         handlerRuntime = new HandlerRuntime(config);
         await handlerRuntime.start();
         handlerRuntime.stop();
-        expect(request.headers['authorization']).not.toBeDefined();
-        expect(request.headers['x-kld-authz']).toEqual('test-token');
+        expect(request.headers['authorization']).toEqual('test-token');
     })
     it('should fail to start without a URL', async () => {
         const config = { ...handlerRuntimeConfig }
@@ -459,7 +458,7 @@ describe('HandlerRuntime', () => {
         connectedSocket?.send(JSON.stringify({ messageType: WSMessageType.HANDLE_TRANSACTIONS, id: 'test-request-id', transactions: [{ id: 'test-transaction-id', operation: 'test-operation' }] }));
         handlerRuntime.stop();
         await new Promise(resolve => setTimeout(resolve, 100));
-        expect(mockLogger.error).toHaveBeenCalledWith("No transaction handler registered: undefined");
+        expect(mockLogger.error).toHaveBeenCalledWith("Handler not set in transactions message");
     })
     it('should handle an error from a transaction handler', async () => {
         handlerRuntime = new HandlerRuntime(handlerRuntimeConfig);
@@ -497,7 +496,7 @@ describe('HandlerRuntime', () => {
         connectedSocket?.emit('message', Buffer.from('string'), true)
         handlerRuntime.stop();
         await new Promise(resolve => setTimeout(resolve, 100));
-        expect(mockLogger.warn).toHaveBeenCalledWith('Received non-string message data');
+        expect(mockLogger.warn).toHaveBeenCalledWith('Received non-string message data, ignoring');
     })
     it('should reconnect', async () => {
         const config = { ...handlerRuntimeConfig };
