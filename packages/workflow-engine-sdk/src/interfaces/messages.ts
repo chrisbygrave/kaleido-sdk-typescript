@@ -15,10 +15,10 @@
 // limitations under the License.
 
 
-import { 
-  WSEvaluateBatch, 
-  WSEvaluateReply, 
-  WSregisterHandler,
+import {
+  WSEvaluateBatch,
+  WSEvaluateReply,
+  WSRegisterHandler,
   WSEventSourceConfig,
   WSListenerPollRequest,
   WSListenerPollResult,
@@ -27,10 +27,10 @@ import {
 /**
  * All possible WebSocket message types
  */
-export type WSMessage = 
+export type WSMessage =
   | WSEvaluateBatch
-  | WSEvaluateReply  
-  | WSregisterHandler
+  | WSEvaluateReply
+  | WSRegisterHandler
   | WSEventSourceConfig
   | WSListenerPollRequest
   | WSListenerPollResult;

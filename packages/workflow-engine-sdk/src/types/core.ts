@@ -223,7 +223,7 @@ export interface WSRegisterProvider extends WSHandlerEnvelope {
 /**
  * Handler registration message
  */
-export interface WSregisterHandler extends WSHandlerEnvelope {
+export interface WSRegisterHandler extends WSHandlerEnvelope {
   // Additional fields for registration if needed
 }
 
