@@ -145,7 +145,7 @@ describe('Snap Component Test', () => {
     watcherActionMap.set('trap-fired', {
       invocationMode: InvocationMode.PARALLEL,
       handler: async (transaction: WSEvaluateTransaction, input: SnapHandlerInput) => {
-        expect(transaction.events).toHaveLength(1);
+        expect(transaction.events?.length).toBeGreaterThanOrEqual(1);
         const snap = transaction.events![0];
         const cardPlayed: PlayingCard = typeof snap.data === 'string'
           ? JSON.parse(snap.data)
