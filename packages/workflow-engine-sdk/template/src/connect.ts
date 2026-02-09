@@ -19,14 +19,16 @@ import {
   newDirectedTransactionHandler,
   WorkflowEngineClient,
 } from '@kaleido-io/workflow-engine-sdk';
+import dotenv from 'dotenv';
 
 import provider from './provider.js';
 
 import { actionMap as helloActionMap } from './samples/hello/handlers.js';
 import { actionMap as httpInvokeActionMap } from './samples/http-invoke/handlers.js';
 import { eventSource } from './samples/event-source/event-source.js';
-import dotenv from 'dotenv';
+import { actionMap as snapActionMap } from './samples/snap/snap-handler.js';
 import { echoEventProcessor } from './samples/event-source/event-processor.js';
+import { eventSource as dealerEventSource } from './samples/snap/event-source.js';
 
 dotenv.config();
 const wsUrl = `wss://${process.env.ACCOUNT}/endpoint/${process.env.ENVIRONMENT}/${process.env.WORKFLOW_ENGINE}/rest/ws`;
@@ -47,5 +49,10 @@ client.registerTransactionHandler('http-invoke', httpInvokeHandler);
 
 client.registerEventProcessor('echo', echoEventProcessor);
 client.registerEventSource('my-listener', eventSource);
+
+const snapHandler = newDirectedTransactionHandler('snap-watcher', snapActionMap);
+client.registerTransactionHandler('snap-watcher', snapHandler);
+
+client.registerEventSource('snap-dealer', dealerEventSource);
 
 await client.connect();
