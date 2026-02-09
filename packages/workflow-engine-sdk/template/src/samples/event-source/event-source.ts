@@ -15,7 +15,7 @@
 // limitations under the License.
 
 
-import { EventSourceConf, EventSourceEvent, newEventSource, newLogger } from "@kaleido-io/workflow-engine-sdk";
+import { EventSourceConf, EventSourceEvent, newEventSource, newLogger, WSEventStreamInfo } from "@kaleido-io/workflow-engine-sdk";
 
 const log = newLogger('event-source');
 
@@ -65,6 +65,6 @@ export const eventSource = newEventSource<MyEventSourceCheckpoint, MyEventSource
       pollingInterval: config.pollingInterval || 5000
     };
   })
-  .withDeleteFn(async (info) => {
+  .withDeleteFn(async (info: WSEventStreamInfo) => {
     log.info(`Cleaning up event source ${info.streamName} (${info.streamId})`);
   });

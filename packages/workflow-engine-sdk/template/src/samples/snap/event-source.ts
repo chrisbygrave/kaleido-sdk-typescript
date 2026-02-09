@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { EventSourceConf, newEventSource, newLogger } from "@kaleido-io/workflow-engine-sdk";
+import { EventSourceConf, newEventSource, newLogger, WSEventStreamInfo } from "@kaleido-io/workflow-engine-sdk";
 
 const log = newLogger('dealer-event-source');
 
@@ -97,28 +97,8 @@ export const dealerEventSource = newEventSource<DealerEventSourceCheckpoint, Dea
             resetInterval: config.resetInterval || 10000
         };
     })
-    .withDeleteFn(async (info) => {
+    .withDeleteFn(async (info: WSEventStreamInfo) => {
         log.info(`Cleaning up event source ${info.streamName} (${info.streamId})`);
     });
-// const dealerEventSource = {
-//     name: () => 'snap-dealer',
-//     init: async (_engAPI: any, EventSourceConfig: EventSourceConf<DealerEventSourceConfig>) => {
-//         log.info('Dealer initialized');
-//         log.info('Reset interval:', EventSourceConfig.config.resetInterval);
-//         setInterval(() => {
-//             log.info('Resetting deck');
-//             deck = newDeck();
-//             shuffleDeck(deck);
-//             dealt = 0;
-//         }, EventSourceConfig.config.resetInterval);
-//     },
-//     close: () => {
-//         log.info('Dealer closed');
-//     },
-//     eventSourcePoll: async (_config: EventSourceConf<DealerEventSourceConfig>, result: any) => {
-//     },
-//     eventSourceValidateConfig: async () => { },
-//     eventSourceDelete: async () => { }
-// };
 
 export const eventSource = dealerEventSource;
