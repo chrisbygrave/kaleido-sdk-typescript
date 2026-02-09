@@ -15,7 +15,7 @@
 // limitations under the License.
 
 
-import { BasicStageDirector, DirectedActionConfig, EvalResult, InvocationMode, WithStageDirector, WSEvaluateRequest } from "@kaleido-io/workflow-engine-sdk";
+import { BasicStageDirector, DirectedActionConfig, EvalResult, InvocationMode, WithStageDirector, WSEvaluateTransaction } from "@kaleido-io/workflow-engine-sdk";
 
 class MyHandlerInput implements WithStageDirector {
     public stageDirector: BasicStageDirector;
@@ -44,8 +44,8 @@ class MyHandlerInput implements WithStageDirector {
 
 const map: Map<string, DirectedActionConfig<MyHandlerInput>> = new Map([
     ["echo", {
-        invocationMode: InvocationMode.PARALLEL, handler: async (request: WSEvaluateRequest) => {
-            if (request.state?.input?.data === undefined || request.state?.input?.data?.message === undefined) {
+        invocationMode: InvocationMode.PARALLEL, handler: async (transaction: WSEvaluateTransaction) => {
+            if (transaction.state?.input?.data === undefined || transaction.state?.input?.data?.message === undefined) {
                 return {
                     result: EvalResult.HARD_FAILURE,
                     error: new Error('Message is required')
@@ -54,7 +54,7 @@ const map: Map<string, DirectedActionConfig<MyHandlerInput>> = new Map([
                 return {
                     result: EvalResult.COMPLETE,
                     output: {
-                        message: `Event received with message: ${request.state.input.data.message}`,
+                        message: `Event received with message: ${transaction.state.input.data.message}`,
                     }
                 }
             }

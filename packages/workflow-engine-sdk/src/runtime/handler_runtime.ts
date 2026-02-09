@@ -73,9 +73,9 @@ export interface HandlerRuntimeConfig {
   // Max attempts is the maximum number of attempts to reconnect to the workflow engine
   maxAttempts?: number;
   // Ping interval is the interval between ping messages (default: 30s)
-  pingIntervalMs?: number; 
+  pingIntervalMs?: number;
   // Pong timeout is the timeout for pong response (default: 10s)
-  pongTimeoutMs?: number; 
+  pongTimeoutMs?: number;
 }
 
 /**
@@ -109,7 +109,7 @@ export class HandlerRuntime {
   private activeHandlerContext?: { requestId: string; authTokens: Record<string, string> };
 
   constructor(config: HandlerRuntimeConfig) {
-    if (process.env.WORKFLOW_ENGINE_MODE === 'inbound' ) {
+    if (process.env.WORKFLOW_ENGINE_MODE === 'inbound') {
       this.mode = HandlerRuntimeMode.INBOUND;
       if (!process.env.WEBSOCKET_PORT) {
         throw newError(SDKErrors.MsgSDKWebSocketPortRequiredInbound);
@@ -489,12 +489,7 @@ export class HandlerRuntime {
       const handler = this.transactionHandlers.get(batch.handler);
       if (handler) {
         this.setActiveHandlerContext(batch.id, batch.authTokens || {});
-        // Convert WSHandleTransactions to WSEvaluateBatch format expected by handler
-        const evaluateBatch = {
-          ...batch,
-          requests: batch.transactions, // Map transactions -> requests
-        };
-        await handler.transactionHandlerBatch(response as any, evaluateBatch as any);
+        await handler.transactionHandlerBatch(response, batch);
       } else {
         response.error = `No transaction handler registered: ${batch.handler}`;
         log.error(response.error);

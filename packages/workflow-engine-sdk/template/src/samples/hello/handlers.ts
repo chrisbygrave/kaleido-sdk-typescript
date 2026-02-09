@@ -15,7 +15,7 @@
 // limitations under the License.
 
 
-import { BasicStageDirector, DirectedActionConfig, EvalResult, InvocationMode, WithStageDirector, WSEvaluateRequest } from "@kaleido-io/workflow-engine-sdk";
+import { BasicStageDirector, DirectedActionConfig, EvalResult, InvocationMode, WithStageDirector, WSEvaluateTransaction } from "@kaleido-io/workflow-engine-sdk";
 
 class MyHandlerInput implements WithStageDirector {
     public stageDirector: BasicStageDirector;
@@ -44,8 +44,8 @@ class MyHandlerInput implements WithStageDirector {
 
 const map: Map<string, DirectedActionConfig<MyHandlerInput>> = new Map([
     ["hello", {
-        invocationMode: InvocationMode.PARALLEL, handler: async (request: WSEvaluateRequest) => {
-            if (request.state?.input?.name === undefined) {
+        invocationMode: InvocationMode.PARALLEL, handler: async (transaction: WSEvaluateTransaction) => {
+            if (transaction.state?.input?.name === undefined) {
                 return {
                     result: EvalResult.HARD_FAILURE,
                     error: new Error('Name is required')
@@ -54,13 +54,13 @@ const map: Map<string, DirectedActionConfig<MyHandlerInput>> = new Map([
                 return {
                     result: EvalResult.COMPLETE,
                     output: {
-                        greeting: `Hello ${request.state.input.name}!`,
+                        greeting: `Hello ${transaction.state.input.name}!`,
                     },
                     events: [
                         {
-                            idempotencyKey: request.idempotencyKey,
+                            idempotencyKey: transaction.idempotencyKey,
                             topic: 'greeting',
-                            data: `Hello ${request.state.input.name}!`
+                            data: `Hello ${transaction.state.input.name}!`
                         }
                     ]
                 }

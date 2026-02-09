@@ -25,7 +25,7 @@ import {
     InvocationMode,
     EvalResult,
     WithStageDirector,
-    DirectedRequestBatchIn
+    DirectedTransactionBatchIn
 } from '../src/index';
 import { newLogger } from '../src/log/logger';
 import { FlowStageTypes } from '../src/types/flows';
@@ -69,14 +69,14 @@ export class BatchTestHandler {
     }
 
     private async batchProcess(
-        requests: DirectedRequestBatchIn<BatchTestInput>[]
+        transactions: DirectedTransactionBatchIn<BatchTestInput>[]
     ): Promise<{ result: EvalResult; output?: any; error?: Error }[]> {
-        logger.info(`[BatchTest] Processing batch of ${requests.length} requests`);
+        logger.info(`[BatchTest] Processing batch of ${transactions.length} transactions`);
 
-        return requests.map((req, index) => {
+        return transactions.map((req, index) => {
             try {
                 const input = req.value;
-                logger.info(`[BatchTest] Processing request ${index + 1}:`, {
+                logger.info(`[BatchTest] Processing transaction ${index + 1}:`, {
                     transactionId: req.transaction.transactionId,
                     value: input.value,
                     totalValue: input.totalValue
@@ -97,11 +97,11 @@ export class BatchTestHandler {
                     percentage: percentage,
                     result: `The percentage is ${percentage.toFixed(2)}%`,
                     batchIndex: index,
-                    batchSize: requests.length,
+                    batchSize: transactions.length,
                     transactionId: req.transaction.transactionId
                 };
 
-                logger.info(`[BatchTest] Success for request ${req.transaction.transactionId}: ${percentage.toFixed(2)}%`);
+                logger.info(`[BatchTest] Success for transaction ${req.transaction.transactionId}: ${percentage.toFixed(2)}%`);
 
                 return {
                     result: EvalResult.COMPLETE,
@@ -115,7 +115,7 @@ export class BatchTestHandler {
                     ]
                 };
             } catch (error) {
-                logger.error(`[BatchTest] Error for request ${req.transaction.transactionId}:`, error);
+                logger.error(`[BatchTest] Error for transaction ${req.transaction.transactionId}:`, error);
                 return {
                     result: EvalResult.HARD_FAILURE,
                     error: error instanceof Error ? error : new Error(String(error))
@@ -134,7 +134,7 @@ export class BatchTestHandler {
 }
 
 describe('Batch Processing Test', () => {
-    it('should process batch requests correctly', async () => {
+    it('should process batch transactions correctly', async () => {
         const handler = new BatchTestHandler();
         const actionMap = handler.getActionMap();
 
@@ -147,14 +147,14 @@ describe('Batch Processing Test', () => {
             throw new Error('Batch handler not found');
         }
 
-        // Create test requests
+        // Create test transactions
         const testInputs = [
             { value: 25, totalValue: 100 },
             { value: 75, totalValue: 100 },
             { value: 10, totalValue: 50 }
         ];
 
-        const mockRequests: DirectedRequestBatchIn<BatchTestInput>[] = testInputs.map((input, index) => ({
+        const mockRequests: DirectedTransactionBatchIn<BatchTestInput>[] = testInputs.map((input, index) => ({
             transaction: {
                 transactionId: `test-${index}`,
                 workflowId: 'test-flow',
@@ -200,8 +200,8 @@ describe('Batch Processing Test', () => {
             throw new Error('Batch handler not found');
         }
 
-        // Create test requests with invalid input
-        const mockRequests: DirectedRequestBatchIn<BatchTestInput>[] = [
+        // Create test transactions with invalid input
+        const mockRequests: DirectedTransactionBatchIn<BatchTestInput>[] = [
             {
                 transaction: {
                     transactionId: 'test-error',

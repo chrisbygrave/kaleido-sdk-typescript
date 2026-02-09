@@ -33,8 +33,8 @@ export class MyEventProcessor {
     }
 
     eventProcessorBatch(result: WSEventProcessorBatchResult, batch: WSEventProcessorBatchRequest): Promise<void> {
-        for (const request of batch.events) {
-            console.log(`Event received: ${request.topic} - ${JSON.stringify(request.data, null, '\t')}`);
+        for (const event of batch.events) {
+            console.log(`Event received: ${event.topic} - ${JSON.stringify(event.data, null, '\t')}`);
         }
         result.checkpoint = {
             lastPollTime: Date.now()

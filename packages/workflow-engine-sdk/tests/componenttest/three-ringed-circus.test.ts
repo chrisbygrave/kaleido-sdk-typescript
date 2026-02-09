@@ -24,7 +24,7 @@ import {
   BasicStageDirector,
   InvocationMode,
   EvalResult,
-  WSEvaluateRequest,
+  WSEvaluateTransaction,
   WithStageDirector,
   PatchOpType,
   newLogger,
@@ -72,7 +72,7 @@ describe('Three-Ringed Circus Component Test', () => {
   let failCount = 0;
   const createdWorkflows: string[] = [];
   const createdTransactions: string[] = [];
-  
+
   // Helper to get auth headers for REST API calls (extracted from SDK's client config)
   function getAuthHeaders(): Record<string, string> {
     const clientConfig = ConfigLoader.createClientConfig(testConfig, 'test-client');
@@ -86,7 +86,7 @@ describe('Three-Ringed Circus Component Test', () => {
     // Use SDK's ConfigLoader to create client config (just like real users would)
     const clientConfig = ConfigLoader.createClientConfig(testConfig, 'pythons');
     logger.info(`WebSocket URL: ${clientConfig.url}`);
-    
+
     client = new WorkflowEngineClient(clientConfig);
 
     const actionMap = new Map();
@@ -94,7 +94,7 @@ describe('Three-Ringed Circus Component Test', () => {
     // Enter action
     actionMap.set('enter', {
       invocationMode: InvocationMode.PARALLEL,
-      handler: async (request: WSEvaluateRequest, input: CircusInput) => {
+      handler: async (transaction: WSEvaluateTransaction, input: CircusInput) => {
         if (Math.random() < failLikelihood) {
           failCount++;
           return {
@@ -118,11 +118,11 @@ describe('Three-Ringed Circus Component Test', () => {
     // Ring one action
     actionMap.set('one', {
       invocationMode: InvocationMode.PARALLEL,
-      handler: async (request: WSEvaluateRequest) => {
+      handler: async (transaction: WSEvaluateTransaction) => {
         // Check for config profile
-        if (request.configProfile) {
+        if (transaction.configProfile) {
           const configProfile: ActionOneConfigProfile = JSON.parse(
-            typeof request.configProfile === 'string' ? request.configProfile : JSON.stringify(request.configProfile)
+            typeof transaction.configProfile === 'string' ? transaction.configProfile : JSON.stringify(transaction.configProfile)
           );
           if (configProfile.oneVisitExit) {
             return {
@@ -159,10 +159,10 @@ describe('Three-Ringed Circus Component Test', () => {
     // Ring three action
     actionMap.set('three', {
       invocationMode: InvocationMode.PARALLEL,
-      handler: async (request: WSEvaluateRequest, input: CircusInput) => {
+      handler: async (_transaction: WSEvaluateTransaction, input: CircusInput) => {
         const newCircuits = input.circuits + 1;
         const newStage = newCircuits >= circuitsPerVisit ? 'exit' : 'one';
-        
+
         return {
           result: EvalResult.COMPLETE,
           customStage: newStage,
@@ -231,7 +231,7 @@ describe('Three-Ringed Circus Component Test', () => {
       logger.error(`Error response: ${errorText}`);
       throw new Error(`Failed to create workflow: ${flowResponse.status} ${errorText}`);
     }
-    
+
     const workflow = await flowResponse.json() as any;
     createdWorkflows.push(workflow.id);
     logger.info(`Workflow created: ${workflow.id}`);
@@ -300,7 +300,7 @@ describe('Three-Ringed Circus Component Test', () => {
 
     // Verify each transaction
     const tentsByVisitor: Record<string, Set<string>> = {};
-    
+
     logger.info(`Checking ${transactions.length} transactions`);
     for (let i = 0; i < transactions.length; i++) {
       const tx = transactions[i];
@@ -312,7 +312,7 @@ describe('Three-Ringed Circus Component Test', () => {
       expect(txResponse.status).toBe(200);
       expect(txResponse.ok).toBe(true);
       const txState = await txResponse.json() as any;
-      
+
       expect(txState.stage).toBe('exit');
       expect(txState.state.input.ticketNumber).toBe(1000 + i);
       expect(txState.state.circuits).toBe(circuitsPerVisit);

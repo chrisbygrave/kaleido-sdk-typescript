@@ -16,7 +16,7 @@
 
 
 import { describe, it, expect } from 'vitest';
-import { EvalResult, WSEvaluateRequest } from '@kaleido-io/workflow-engine-sdk';
+import { EvalResult, WSEvaluateTransaction } from '@kaleido-io/workflow-engine-sdk';
 import { actionMap } from './handlers';
 
 describe('Hello handlers', () => {
@@ -28,7 +28,7 @@ describe('Hello handlers', () => {
             throw new Error('Handler not found');
         }
 
-        const mockRequest: Partial<WSEvaluateRequest> = {
+        const mockRequest: Partial<WSEvaluateTransaction> = {
             state: {
                 input: {
                     name: 'World'
@@ -47,7 +47,7 @@ describe('Hello handlers', () => {
             name: () => 'hello'
         };
 
-        const result = await handler.handler(mockRequest as WSEvaluateRequest, mockInput as any);
+        const result = await handler.handler(mockRequest as WSEvaluateTransaction, mockInput as any);
 
         expect(result.result).toBe(EvalResult.COMPLETE);
         expect(result.output).toEqual({
@@ -63,7 +63,7 @@ describe('Hello handlers', () => {
             throw new Error('Handler not found');
         }
 
-        const mockRequest: Partial<WSEvaluateRequest> = {
+        const mockRequest: Partial<WSEvaluateTransaction> = {
             state: {
                 input: {}
             }
@@ -80,7 +80,7 @@ describe('Hello handlers', () => {
             name: () => 'hello'
         };
 
-        const result = await handler.handler(mockRequest as WSEvaluateRequest, mockInput as any);
+        const result = await handler.handler(mockRequest as WSEvaluateTransaction, mockInput as any);
 
         expect(result.result).toBe(EvalResult.HARD_FAILURE);
         expect(result.error).toBeInstanceOf(Error);
@@ -95,7 +95,7 @@ describe('Hello handlers', () => {
             throw new Error('Handler not found');
         }
 
-        const mockRequest: Partial<WSEvaluateRequest> = {
+        const mockRequest: Partial<WSEvaluateTransaction> = {
             state: {}
         };
 
@@ -110,7 +110,7 @@ describe('Hello handlers', () => {
             name: () => 'hello'
         };
 
-        const result = await handler.handler(mockRequest as WSEvaluateRequest, mockInput as any);
+        const result = await handler.handler(mockRequest as WSEvaluateTransaction, mockInput as any);
 
         expect(result.result).toBe(EvalResult.HARD_FAILURE);
         expect(result.error).toBeInstanceOf(Error);
@@ -125,7 +125,7 @@ describe('Hello handlers', () => {
             throw new Error('Handler not found');
         }
 
-        const mockRequest: Partial<WSEvaluateRequest> = {};
+        const mockRequest: Partial<WSEvaluateTransaction> = {};
 
         const mockInput = {
             stageDirector: {
@@ -138,7 +138,7 @@ describe('Hello handlers', () => {
             name: () => 'hello'
         };
 
-        const result = await handler.handler(mockRequest as WSEvaluateRequest, mockInput as any);
+        const result = await handler.handler(mockRequest as WSEvaluateTransaction, mockInput as any);
 
         expect(result.result).toBe(EvalResult.HARD_FAILURE);
         expect(result.error).toBeInstanceOf(Error);

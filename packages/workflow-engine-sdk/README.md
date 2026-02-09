@@ -6,7 +6,7 @@ A TypeScript SDK for building handlers that integrate with the Kaleido Workflow 
 
 **This SDK lets you create a provider.** A provider is your application that connects to the workflow engine and advertises what it can do. The engine discovers providers over WebSocket and binds them to workflow stages and streams. A provider exposes:
 
-- **Handlers** — Transaction handlers that the engine invokes when a transaction reaches a stage bound to your provider; your code evaluates the request (e.g. call an API, run logic), returns a result and optional state updates, and the engine moves the transaction to the next stage or failure stage.
+- **Handlers** — Transaction handlers that the engine invokes when a transaction reaches a stage bound to your provider; your code evaluates the transaction (e.g. call an API, run logic), returns a result and optional state updates, and the engine moves the transaction to the next stage or failure stage.
 - **Event sources** — Polling or push sources that produce events (e.g. from an external system or queue); the engine polls your code, you return new events and a checkpoint, and the engine delivers those events through streams to workflows and event processors.
 - **Event processors** — Consumers that receive batches of events from streams; the engine sends you events that matched a stream’s definition, and you process them (e.g. persist, forward) and optionally update checkpoints.
 
@@ -57,7 +57,7 @@ const client = new WorkflowEngineClient(clientConfig);
 const actionMap = new Map([
   ['myAction', {
     invocationMode: InvocationMode.PARALLEL,
-    handler: async (request, input) => {
+    handler: async (transaction, input) => {
       return {
         result: EvalResult.COMPLETE,
         output: { success: true }
@@ -301,7 +301,7 @@ interface MyInput {
 const actionMap = new Map([
   ['processData', {
     invocationMode: InvocationMode.PARALLEL,
-    handler: async (request, input: MyInput) => {
+    handler: async (transaction, input: MyInput) => {
       // Process the data
       const result = processData(input.data);
       
@@ -317,9 +317,9 @@ const actionMap = new Map([
   
   ['batchProcess', {
     invocationMode: InvocationMode.BATCH,
-    batchHandler: async (requests) => {
-      // Process all requests together
-      const results = await processBatch(requests.map(r => r.value));
+    batchHandler: async (transactions) => {
+      // Process all transactions together
+      const results = await processBatch(transactions.map(r => r.value));
       
       return results.map(result => ({
         result: EvalResult.COMPLETE,
@@ -349,7 +349,7 @@ client.registerTransactionHandler('my-handler', handler);
 ```typescript
 {
   invocationMode: InvocationMode.PARALLEL,
-  handler: async (request, input) => {
+  handler: async (transaction, input) => {
     // Process single transaction
     return { result: EvalResult.COMPLETE };
   }
@@ -360,9 +360,9 @@ client.registerTransactionHandler('my-handler', handler);
 ```typescript
 {
   invocationMode: InvocationMode.BATCH,
-  batchHandler: async (requests) => {
+  batchHandler: async (transactions) => {
     // Process all transactions at once
-    const results = await batchProcess(requests);
+    const results = await batchProcess(transactions);
     return results;
   }
 }
@@ -618,10 +618,10 @@ The `EngineAPI` interface allows handlers to make synchronous API calls back to 
 ### Submitting Async Transactions
 
 ```typescript
-async function myHandler(request, input, engAPI: EngineAPI) {
+async function myHandler(transaction, input, engAPI: EngineAPI) {
   // Submit transactions to the engine
   const results = await engAPI.submitAsyncTransactions(
-    request.authRef,
+    transaction.authRef,
     [
       {
         workflowId: 'flw:abc123',
@@ -673,7 +673,7 @@ class MyInputImpl implements MyInput {
 const actionMap = new Map([
   ['myAction', {
     invocationMode: InvocationMode.PARALLEL,
-    handler: async (request, input: any) => {
+    handler: async (transaction, input: any) => {
       // input.action, input.outputPath, input.nextStage are available
       return {
         result: EvalResult.COMPLETE,
@@ -691,7 +691,7 @@ const actionMap = new Map([
 Return appropriate error results:
 
 ```typescript
-handler: async (request, input) => {
+handler: async (transaction, input) => {
   try {
     const result = await riskyOperation(input);
     return {
@@ -762,13 +762,13 @@ describe('MyHandler', () => {
       submitAsyncTransactions: jest.fn().mockResolvedValue([])
     };
 
-    const request = {
+    const transaction = {
       transactionId: 'ftx:test123',
       workflowId: 'flw:test',
       input: { action: 'process', data: 'test' }
     };
 
-    const result = await myHandler(request, request.input, mockEngAPI);
+    const result = await myHandler(transaction, transaction.input, mockEngAPI);
 
     expect(result.result).toBe(EvalResult.COMPLETE);
     expect(result.output).toBeDefined();
@@ -881,7 +881,7 @@ async function main() {
   const actionMap = new Map([
     ['validatePayment', {
       invocationMode: InvocationMode.PARALLEL,
-      handler: async (request, input: ProcessInput) => {
+      handler: async (transaction, input: ProcessInput) => {
         if (input.amount <= 0) {
           return {
             result: EvalResult.HARD_FAILURE,
@@ -901,7 +901,7 @@ async function main() {
 
     ['processPayment', {
       invocationMode: InvocationMode.PARALLEL,
-      handler: async (request, input: ProcessInput) => {
+      handler: async (transaction, input: ProcessInput) => {
         const paymentResult = await processPayment(input.userId, input.amount);
         
         return {
@@ -955,10 +955,10 @@ Workflow Engine
 ### Handler Execution Flow
 
 ```
-1. Workflow Engine sends WSEvaluateBatch
+1. Workflow Engine sends WSHandleTransactions
 2. HandlerRuntime routes to registered handler
 3. Handler processes transactions
-4. Handler returns WSEvaluateReply with results
+4. Handler returns WSHandleTransactionsResult with results
 5. Runtime sends reply back to engine
 6. Engine updates workflow state
 ```

@@ -18,9 +18,9 @@
 import {
   EvalResult,
   InvocationMode,
-  WSEvaluateRequest,
-  WSEvaluateReply,
-  WSEvaluateBatch,
+  WSEvaluateTransaction,
+  WSHandleTransactionsResult,
+  WSHandleTransactions,
   WSEvaluateReplyResult,
   WSEventSourceConfig,
   WSListenerPollRequest,
@@ -74,8 +74,8 @@ export interface EventSource extends Handler {
  */
 export interface TransactionHandler extends Handler {
   transactionHandlerBatch(
-    result: WSEvaluateReply,
-    batch: WSEvaluateBatch
+    result: WSHandleTransactionsResult,
+    batch: WSHandleTransactions
   ): Promise<void>;
 }
 
@@ -93,22 +93,22 @@ export interface EventProcessor extends Handler {
  * Function type for handling individual directed requests
  */
 export type DirectedTransactionHandler<T extends WithStageDirector> = (
-  request: WSEvaluateRequest,
+  transaction: WSEvaluateTransaction,
   input: T
 ) => Promise<{ result: EvalResult; output?: any; error?: Error; triggers?: Trigger[]; events?: HandlerEvent[]; extraUpdates?: Patch; customStage?: string }>;
 
 /**
- * Input for batch directed request handling
+ * Input for batch directed transaction handling
  */
-export interface DirectedRequestBatchIn<T extends WithStageDirector> {
-  transaction: WSEvaluateRequest;
+export interface DirectedTransactionBatchIn<T extends WithStageDirector> {
+  transaction: WSEvaluateTransaction;
   value: T;
 }
 
 /**
- * Output for batch directed request handling
+ * Output for batch directed transaction handling
  */
-export interface DirectedRequestBatchOut<_T extends WithStageDirector> {
+export interface DirectedTransactionBatchOut<_T extends WithStageDirector> {
   result: EvalResult;
   output?: any;
   error?: Error;
@@ -119,11 +119,11 @@ export interface DirectedRequestBatchOut<_T extends WithStageDirector> {
 }
 
 /**
- * Function type for handling batch directed requests.
+ * Function type for handling batch directed transactions.
  */
-export type DirectedRequestBatchHandler<T extends WithStageDirector> = (
-  requests: DirectedRequestBatchIn<T>[]
-) => Promise<DirectedRequestBatchOut<T>[]>;
+export type DirectedTransactionBatchHandler<T extends WithStageDirector> = (
+  transactions: DirectedTransactionBatchIn<T>[]
+) => Promise<DirectedTransactionBatchOut<T>[]>;
 
 /**
  * Configuration for a directed action
@@ -131,7 +131,7 @@ export type DirectedRequestBatchHandler<T extends WithStageDirector> = (
 export interface DirectedActionConfig<T extends WithStageDirector> {
   invocationMode: InvocationMode;
   handler?: DirectedTransactionHandler<T>;
-  batchHandler?: DirectedRequestBatchHandler<T>;
+  batchHandler?: DirectedTransactionBatchHandler<T>;
 }
 
 /**
@@ -139,17 +139,17 @@ export interface DirectedActionConfig<T extends WithStageDirector> {
  */
 export interface IHandler {
   init(): Promise<void>;
-  handle(requests: WSEvaluateRequest[]): Promise<WSEvaluateReplyResult[]>;
+  handle(transactions: WSEvaluateTransaction[]): Promise<WSEvaluateReplyResult[]>;
   close?(): void; // Optional for backward compatibility
 }
 
 /**
- * Request handler for batch evaluation with services support
+ * Transaction handler for batch evaluation with services support
  */
-export interface RequestHandler<SVCS = any> extends Handler {
-  evalBatch(
-    reply: WSEvaluateReply,
-    batch: WSEvaluateBatch,
+export interface TransactionHandler<SVCS = any> extends Handler {
+  transactionHandlerBatch(
+    reply: WSHandleTransactionsResult,
+    batch: WSHandleTransactions,
     svcs?: SVCS
   ): Promise<void>;
 }

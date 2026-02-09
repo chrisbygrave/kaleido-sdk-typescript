@@ -24,7 +24,7 @@ import {
   BasicStageDirector,
   InvocationMode,
   EvalResult,
-  WSEvaluateRequest,
+  WSEvaluateTransaction,
   WithStageDirector,
   newLogger,
 } from '../../src/index';
@@ -96,7 +96,7 @@ describe('Snap Component Test', () => {
   const createdWorkflows: string[] = [];
   const createdTransactions: string[] = [];
   const createdStreams: string[] = [];
-  
+
   // Helper to get auth headers for REST API calls (extracted from SDK's client config)
   function getAuthHeaders(): Record<string, string> {
     const clientConfig = ConfigLoader.createClientConfig(testConfig, 'test-client');
@@ -119,7 +119,7 @@ describe('Snap Component Test', () => {
     // Set trap action
     watcherActionMap.set('set-trap', {
       invocationMode: InvocationMode.PARALLEL,
-      handler: async (request: WSEvaluateRequest, input: SnapHandlerInput) => {
+      handler: async (transaction: WSEvaluateTransaction, input: SnapHandlerInput) => {
         const cardTopic = `suit.${input.suit}.rank.${input.rank}`;
         return {
           result: EvalResult.COMPLETE,
@@ -131,7 +131,7 @@ describe('Snap Component Test', () => {
     // Trap set action
     watcherActionMap.set('trap-set', {
       invocationMode: InvocationMode.PARALLEL,
-      handler: async (request: WSEvaluateRequest, input: SnapHandlerInput) => {
+      handler: async (transaction: WSEvaluateTransaction, input: SnapHandlerInput) => {
         const cardTopic = `suit.${input.suit}.rank.${input.rank}`;
         logger.info(`Trap set: ${cardTopic}`);
         trapsSet.set(cardTopic, true);
@@ -144,16 +144,16 @@ describe('Snap Component Test', () => {
     // Trap fired action
     watcherActionMap.set('trap-fired', {
       invocationMode: InvocationMode.PARALLEL,
-      handler: async (request: WSEvaluateRequest, input: SnapHandlerInput) => {
-        expect(request.events).toHaveLength(1);
-        const snap = request.events![0];
-        const cardPlayed: PlayingCard = typeof snap.data === 'string' 
-          ? JSON.parse(snap.data) 
+      handler: async (transaction: WSEvaluateTransaction, input: SnapHandlerInput) => {
+        expect(transaction.events).toHaveLength(1);
+        const snap = transaction.events![0];
+        const cardPlayed: PlayingCard = typeof snap.data === 'string'
+          ? JSON.parse(snap.data)
           : snap.data;
-        
+
         expect(cardPlayed.suit).toBe(input.suit);
         expect(cardPlayed.rank).toBe(input.rank);
-        
+
         return {
           result: EvalResult.COMPLETE,
           output: snap.data
@@ -170,7 +170,7 @@ describe('Snap Component Test', () => {
 
   afterAll(async () => {
     logger.info('Cleaning up snap test');
-    
+
     if (watcherClient) watcherClient.disconnect();
     if (dealerClient) dealerClient.disconnect();
 
@@ -178,7 +178,7 @@ describe('Snap Component Test', () => {
 
     // Cleanup created resources
     const authHeaders = getAuthHeaders();
-    
+
     // Cleanup streams first
     for (const streamId of createdStreams) {
       try {
@@ -270,7 +270,7 @@ describe('Snap Component Test', () => {
     // Wait for all traps to be set
     const maxWaitForTraps = 60000;
     const trapStartTime = Date.now();
-    
+
     while (trapsSet.size < deck.length && (Date.now() - trapStartTime) < maxWaitForTraps) {
       logger.info(`Traps set: ${trapsSet.size}/${deck.length}`);
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -295,7 +295,7 @@ describe('Snap Component Test', () => {
       eventSourcePoll: async (_config: any, result: any) => {
         const toDeal = Math.min(Math.floor(Math.random() * 9) + 1, deck.length - dealt);
         const dealSet = deck.slice(dealt, dealt + toDeal);
-        
+
         if (dealSet.length === 0) {
           result.events = [];
           result.checkpoint = { dealt };
@@ -310,11 +310,11 @@ describe('Snap Component Test', () => {
 
         dealt += toDeal;
         result.checkpoint = { dealt };
-        
+
         logger.info(`Dealt ${toDeal} cards, total: ${dealt}/${deck.length}`);
       },
-      eventSourceValidateConfig: async () => {},
-      eventSourceDelete: async () => {}
+      eventSourceValidateConfig: async () => { },
+      eventSourceDelete: async () => { }
     };
 
     dealerClient.registerEventSource('dealer', dealerEventSource as any);

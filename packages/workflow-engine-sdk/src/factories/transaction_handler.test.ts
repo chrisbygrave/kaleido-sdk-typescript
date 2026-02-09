@@ -23,7 +23,7 @@ jest.mock('../helpers/stage_director', () => ({
 
 import { DirectedActionConfig } from '../interfaces/handlers';
 import { newDirectedTransactionHandler } from './transaction_handler';
-import { WithStageDirector, WSEvaluateBatch, WSEvaluateReply, WSMessageType } from '../types/core';
+import { WithStageDirector, WSHandleTransactions, WSHandleTransactionsResult, WSMessageType } from '../types/core';
 import { EngineClient, EngineClientRuntime } from '../runtime/engine_client';
 import { evalDirected } from '../helpers/stage_director';
 
@@ -49,13 +49,13 @@ describe('newDirectedTransactionHandler', () => {
             .withCloseFn(closeFn);
         await transactionHandler.init(engineClient);
         expect(initFn).toHaveBeenCalledTimes(1);
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests: [],
+        const batch: WSHandleTransactions = {
+            transactions: [],
             handler: 'test-transaction-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',

@@ -21,7 +21,7 @@ import { describe, it, expect } from '@jest/globals';
 import '../../tests/mock-logger';
 
 import { BasicStageDirector, evalDirected, StageDirectorHelper } from './stage_director';
-import { EvalResult, InvocationMode, WithStageDirector, WSEvaluateBatch, WSEvaluateReply, WSEvaluateRequest, WSMessageType, PatchOpType } from '../types/core';
+import { EvalResult, InvocationMode, WithStageDirector, WSHandleTransactions, WSHandleTransactionsResult, WSEvaluateTransaction, WSMessageType, PatchOpType } from '../types/core';
 import { DirectedActionConfig } from '../interfaces/handlers';
 
 class MyHandlerInput implements WithStageDirector {
@@ -51,8 +51,8 @@ class MyHandlerInput implements WithStageDirector {
 
 const actionMap: Map<string, DirectedActionConfig<MyHandlerInput>> = new Map([
     ["hello", {
-        invocationMode: InvocationMode.PARALLEL, handler: async (request: WSEvaluateRequest) => {
-            if (request.state?.input?.name === undefined) {
+        invocationMode: InvocationMode.PARALLEL, handler: async (transaction: WSEvaluateTransaction) => {
+            if (transaction.state?.input?.name === undefined) {
                 return {
                     result: EvalResult.HARD_FAILURE,
                     error: new Error('Name is required')
@@ -61,13 +61,13 @@ const actionMap: Map<string, DirectedActionConfig<MyHandlerInput>> = new Map([
                 return {
                     result: EvalResult.COMPLETE,
                     output: {
-                        greeting: `Hello ${request.state.input.name}!`,
+                        greeting: `Hello ${transaction.state.input.name}!`,
                     },
                     events: [
                         {
-                            idempotencyKey: request.idempotencyKey,
+                            idempotencyKey: transaction.idempotencyKey,
                             topic: 'greeting',
-                            data: `Hello ${request.state.input.name}!`
+                            data: `Hello ${transaction.state.input.name}!`
                         }
                     ]
                 }
@@ -86,8 +86,8 @@ describe('BasicStageDirector', () => {
         expect(stageDirector.getStageDirector().nextStage).toBe('test-next-stage');
         expect(stageDirector.getStageDirector().failureStage).toBe('test-failure-stage');
     })
-    it('should handle a batch of requests', async () => {
-        const requests: WSEvaluateRequest[] = Array.from({ length: 5 }, (_, i) => ({
+    it('should handle a batch of transactions', async () => {
+        const transactions: WSEvaluateTransaction[] = Array.from({ length: 5 }, (_, i) => ({
             handler: 'test-handler',
             sequence: 'test-seq',
             transactionId: 'test-transaction-id',
@@ -105,13 +105,13 @@ describe('BasicStageDirector', () => {
                 failureStage: 'failed',
             } as any as MyHandlerInput,
         }));
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests,
+        const batch: WSHandleTransactions = {
+            transactions,
             handler: 'test-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
@@ -125,11 +125,11 @@ describe('BasicStageDirector', () => {
         })
     })
 
-    it('should handle requests with plain object input (without getStageDirector)', async () => {
+    it('should handle transactions with plain object input (without getStageDirector)', async () => {
         const plainActionMap: Map<string, DirectedActionConfig<any>> = new Map([
             ["plain-action", {
                 invocationMode: InvocationMode.PARALLEL,
-                handler: async (_request: WSEvaluateRequest) => {
+                handler: async (_transaction: WSEvaluateTransaction) => {
                     return {
                         result: EvalResult.COMPLETE,
                         output: { processed: true }
@@ -138,7 +138,7 @@ describe('BasicStageDirector', () => {
             }],
         ]);
 
-        const requests: WSEvaluateRequest[] = [{
+        const transactions: WSEvaluateTransaction[] = [{
             handler: 'test-handler',
             sequence: 'test-seq',
             transactionId: 'test-transaction-id',
@@ -153,13 +153,13 @@ describe('BasicStageDirector', () => {
             }
         }];
 
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests,
+        const batch: WSHandleTransactions = {
+            transactions,
             handler: 'test-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
@@ -172,7 +172,7 @@ describe('BasicStageDirector', () => {
     })
 
     it('should handle invalid action', async () => {
-        const requests: WSEvaluateRequest[] = [{
+        const transactions: WSEvaluateTransaction[] = [{
             handler: 'test-handler',
             sequence: 'test-seq',
             transactionId: 'test-transaction-id',
@@ -187,13 +187,13 @@ describe('BasicStageDirector', () => {
             } as any as MyHandlerInput,
         }];
 
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests,
+        const batch: WSHandleTransactions = {
+            transactions,
             handler: 'test-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
@@ -203,7 +203,7 @@ describe('BasicStageDirector', () => {
     })
 
     it('should handle null input', async () => {
-        const requests: WSEvaluateRequest[] = [{
+        const transactions: WSEvaluateTransaction[] = [{
             handler: 'test-handler',
             sequence: 'test-seq',
             transactionId: 'test-transaction-id',
@@ -213,13 +213,13 @@ describe('BasicStageDirector', () => {
             input: null as any,
         }];
 
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests,
+        const batch: WSHandleTransactions = {
+            transactions,
             handler: 'test-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
@@ -230,7 +230,7 @@ describe('BasicStageDirector', () => {
     })
 
     it('should handle missing action field in plain object', async () => {
-        const requests: WSEvaluateRequest[] = [{
+        const transactions: WSEvaluateTransaction[] = [{
             handler: 'test-handler',
             sequence: 'test-seq',
             transactionId: 'test-transaction-id',
@@ -244,13 +244,13 @@ describe('BasicStageDirector', () => {
             }
         }];
 
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests,
+        const batch: WSHandleTransactions = {
+            transactions,
             handler: 'test-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
@@ -273,7 +273,7 @@ describe('BasicStageDirector', () => {
             }],
         ]);
 
-        const requests: WSEvaluateRequest[] = Array.from({ length: 3 }, (_, i) => ({
+        const transactions: WSEvaluateTransaction[] = Array.from({ length: 3 }, (_, i) => ({
             handler: 'test-handler',
             sequence: 'test-seq',
             transactionId: `test-transaction-id-${i}`,
@@ -288,13 +288,13 @@ describe('BasicStageDirector', () => {
             } as any as MyHandlerInput,
         }));
 
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests,
+        const batch: WSHandleTransactions = {
+            transactions,
             handler: 'test-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
@@ -316,7 +316,7 @@ describe('BasicStageDirector', () => {
             }],
         ]);
 
-        const requests: WSEvaluateRequest[] = Array.from({ length: 2 }, (_, i) => ({
+        const transactions: WSEvaluateTransaction[] = Array.from({ length: 2 }, (_, i) => ({
             handler: 'test-handler',
             sequence: 'test-seq',
             transactionId: `test-transaction-id-${i}`,
@@ -331,19 +331,19 @@ describe('BasicStageDirector', () => {
             } as any as MyHandlerInput,
         }));
 
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests,
+        const batch: WSHandleTransactions = {
+            transactions,
             handler: 'test-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
         };
         await expect(evalDirected<MyHandlerInput>(reply, batch, noBatchHandlerActionMap)).rejects.toThrow(/KA140622/);
-        // All requests should have errors since batchHandler is missing
+        // All transactions should have errors since batchHandler is missing
         // expect(reply.results).toHaveLength(2);
         // reply.results.forEach((result) => {
         //     expect(result.error).toBeDefined();
@@ -356,8 +356,8 @@ describe('BasicStageDirector', () => {
             ["mismatch-batch-action", {
                 invocationMode: InvocationMode.BATCH,
                 batchHandler: async (batchIn) => {
-                    // Intentionally return fewer results than requests to trigger line 373
-                    // batchIn has 3 requests, but we only return 2 results
+                    // Intentionally return fewer results than transactions to trigger line 373
+                    // batchIn has 3 transactions, but we only return 2 results
                     return batchIn.slice(0, 2).map((req, i) => ({
                         result: EvalResult.COMPLETE,
                         output: { processed: i, batch: true }
@@ -366,7 +366,7 @@ describe('BasicStageDirector', () => {
             }],
         ]);
 
-        const requests: WSEvaluateRequest[] = Array.from({ length: 3 }, (_, i) => ({
+        const transactions: WSEvaluateTransaction[] = Array.from({ length: 3 }, (_, i) => ({
             handler: 'test-handler',
             sequence: 'test-seq',
             transactionId: `test-transaction-id-${i}`,
@@ -381,19 +381,19 @@ describe('BasicStageDirector', () => {
             } as any as MyHandlerInput,
         }));
 
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests,
+        const batch: WSHandleTransactions = {
+            transactions,
             handler: 'test-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
         };
         await evalDirected<MyHandlerInput>(reply, batch, mismatchBatchActionMap);
-        // All requests should have errors since batch handler returned wrong count
+        // All transactions should have errors since batch handler returned wrong count
         expect(reply.results).toHaveLength(3);
         reply.results.forEach((result) => {
             expect(result.error).toBeDefined();
@@ -405,13 +405,13 @@ describe('BasicStageDirector', () => {
         const errorActionMap: Map<string, DirectedActionConfig<MyHandlerInput>> = new Map([
             ["error-action", {
                 invocationMode: InvocationMode.PARALLEL,
-                handler: async (_request: WSEvaluateRequest) => {
+                handler: async (_transaction: WSEvaluateTransaction) => {
                     throw new Error('Handler execution failed');
                 }
             }],
         ]);
 
-        const requests: WSEvaluateRequest[] = [{
+        const transactions: WSEvaluateTransaction[] = [{
             handler: 'test-handler',
             sequence: 'test-seq',
             transactionId: 'test-transaction-id',
@@ -426,13 +426,13 @@ describe('BasicStageDirector', () => {
             } as any as MyHandlerInput,
         }];
 
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests,
+        const batch: WSHandleTransactions = {
+            transactions,
             handler: 'test-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
@@ -449,7 +449,7 @@ describe('BasicStageDirector', () => {
             }],
         ]);
 
-        const requests: WSEvaluateRequest[] = [{
+        const transactions: WSEvaluateTransaction[] = [{
             handler: 'test-handler',
             sequence: 'test-seq',
             transactionId: 'test-transaction-id',
@@ -464,13 +464,13 @@ describe('BasicStageDirector', () => {
             } as any as MyHandlerInput,
         }];
 
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests,
+        const batch: WSHandleTransactions = {
+            transactions,
             handler: 'test-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
@@ -484,7 +484,7 @@ describe('BasicStageDirector', () => {
         const failureActionMap: Map<string, DirectedActionConfig<MyHandlerInput>> = new Map([
             ["failure-action", {
                 invocationMode: InvocationMode.PARALLEL,
-                handler: async (_request: WSEvaluateRequest) => {
+                handler: async (_transaction: WSEvaluateTransaction) => {
                     return {
                         result: EvalResult.HARD_FAILURE,
                         error: new Error('Hard failure occurred')
@@ -493,7 +493,7 @@ describe('BasicStageDirector', () => {
             }],
         ]);
 
-        const requests: WSEvaluateRequest[] = [{
+        const transactions: WSEvaluateTransaction[] = [{
             handler: 'test-handler',
             sequence: 'test-seq',
             transactionId: 'test-transaction-id',
@@ -508,13 +508,13 @@ describe('BasicStageDirector', () => {
             } as any as MyHandlerInput,
         }];
 
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests,
+        const batch: WSHandleTransactions = {
+            transactions,
             handler: 'test-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
@@ -529,7 +529,7 @@ describe('BasicStageDirector', () => {
         const waitingActionMap: Map<string, DirectedActionConfig<MyHandlerInput>> = new Map([
             ["waiting-action", {
                 invocationMode: InvocationMode.PARALLEL,
-                handler: async (_request: WSEvaluateRequest) => {
+                handler: async (_transaction: WSEvaluateTransaction) => {
                     return {
                         result: EvalResult.WAITING
                     };
@@ -537,7 +537,7 @@ describe('BasicStageDirector', () => {
             }],
         ]);
 
-        const requests: WSEvaluateRequest[] = [{
+        const transactions: WSEvaluateTransaction[] = [{
             handler: 'test-handler',
             sequence: 'test-seq',
             transactionId: 'test-transaction-id',
@@ -552,13 +552,13 @@ describe('BasicStageDirector', () => {
             } as any as MyHandlerInput,
         }];
 
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests,
+        const batch: WSHandleTransactions = {
+            transactions,
             handler: 'test-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
@@ -571,7 +571,7 @@ describe('BasicStageDirector', () => {
         const fixableErrorActionMap: Map<string, DirectedActionConfig<MyHandlerInput>> = new Map([
             ["fixable-error-action", {
                 invocationMode: InvocationMode.PARALLEL,
-                handler: async (_request: WSEvaluateRequest) => {
+                handler: async (_transaction: WSEvaluateTransaction) => {
                     return {
                         result: EvalResult.FIXABLE_ERROR,
                         error: new Error('Fixable error occurred')
@@ -580,7 +580,7 @@ describe('BasicStageDirector', () => {
             }],
         ]);
 
-        const requests: WSEvaluateRequest[] = [{
+        const transactions: WSEvaluateTransaction[] = [{
             handler: 'test-handler',
             sequence: 'test-seq',
             transactionId: 'test-transaction-id',
@@ -595,13 +595,13 @@ describe('BasicStageDirector', () => {
             } as any as MyHandlerInput,
         }];
 
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests,
+        const batch: WSHandleTransactions = {
+            transactions,
             handler: 'test-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
@@ -614,7 +614,7 @@ describe('BasicStageDirector', () => {
         const transientErrorActionMap: Map<string, DirectedActionConfig<MyHandlerInput>> = new Map([
             ["transient-error-action", {
                 invocationMode: InvocationMode.PARALLEL,
-                handler: async (_request: WSEvaluateRequest) => {
+                handler: async (_transaction: WSEvaluateTransaction) => {
                     return {
                         result: EvalResult.TRANSIENT_ERROR,
                         error: new Error('Transient error occurred')
@@ -623,7 +623,7 @@ describe('BasicStageDirector', () => {
             }],
         ]);
 
-        const requests: WSEvaluateRequest[] = [{
+        const transactions: WSEvaluateTransaction[] = [{
             handler: 'test-handler',
             sequence: 'test-seq',
             transactionId: 'test-transaction-id',
@@ -638,13 +638,13 @@ describe('BasicStageDirector', () => {
             } as any as MyHandlerInput,
         }];
 
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests,
+        const batch: WSHandleTransactions = {
+            transactions,
             handler: 'test-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
@@ -657,7 +657,7 @@ describe('BasicStageDirector', () => {
         const customStageActionMap: Map<string, DirectedActionConfig<MyHandlerInput>> = new Map([
             ["custom-stage-action", {
                 invocationMode: InvocationMode.PARALLEL,
-                handler: async (_request: WSEvaluateRequest) => {
+                handler: async (_transaction: WSEvaluateTransaction) => {
                     return {
                         result: EvalResult.COMPLETE,
                         output: { custom: true },
@@ -667,7 +667,7 @@ describe('BasicStageDirector', () => {
             }],
         ]);
 
-        const requests: WSEvaluateRequest[] = [{
+        const transactions: WSEvaluateTransaction[] = [{
             handler: 'test-handler',
             sequence: 'test-seq',
             transactionId: 'test-transaction-id',
@@ -682,13 +682,13 @@ describe('BasicStageDirector', () => {
             } as any as MyHandlerInput,
         }];
 
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests,
+        const batch: WSHandleTransactions = {
+            transactions,
             handler: 'test-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
@@ -701,7 +701,7 @@ describe('BasicStageDirector', () => {
         const triggerActionMap: Map<string, DirectedActionConfig<MyHandlerInput>> = new Map([
             ["trigger-action", {
                 invocationMode: InvocationMode.PARALLEL,
-                handler: async (_request: WSEvaluateRequest) => {
+                handler: async (_transaction: WSEvaluateTransaction) => {
                     return {
                         result: EvalResult.COMPLETE,
                         output: { triggered: true },
@@ -714,7 +714,7 @@ describe('BasicStageDirector', () => {
             }],
         ]);
 
-        const requests: WSEvaluateRequest[] = [{
+        const transactions: WSEvaluateTransaction[] = [{
             handler: 'test-handler',
             sequence: 'test-seq',
             transactionId: 'test-transaction-id',
@@ -729,13 +729,13 @@ describe('BasicStageDirector', () => {
             } as any as MyHandlerInput,
         }];
 
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests,
+        const batch: WSHandleTransactions = {
+            transactions,
             handler: 'test-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
@@ -751,7 +751,7 @@ describe('BasicStageDirector', () => {
         const extraUpdatesActionMap: Map<string, DirectedActionConfig<MyHandlerInput>> = new Map([
             ["extra-updates-action", {
                 invocationMode: InvocationMode.PARALLEL,
-                handler: async (_request: WSEvaluateRequest) => {
+                handler: async (_transaction: WSEvaluateTransaction) => {
                     return {
                         result: EvalResult.COMPLETE,
                         output: { main: true },
@@ -763,7 +763,7 @@ describe('BasicStageDirector', () => {
             }],
         ]);
 
-        const requests: WSEvaluateRequest[] = [{
+        const transactions: WSEvaluateTransaction[] = [{
             handler: 'test-handler',
             sequence: 'test-seq',
             transactionId: 'test-transaction-id',
@@ -778,13 +778,13 @@ describe('BasicStageDirector', () => {
             } as any as MyHandlerInput,
         }];
 
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests,
+        const batch: WSHandleTransactions = {
+            transactions,
             handler: 'test-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
@@ -800,7 +800,7 @@ describe('BasicStageDirector', () => {
         const extraUpdatesActionMap: Map<string, DirectedActionConfig<MyHandlerInput>> = new Map([
             ["extra-updates-action", {
                 invocationMode: InvocationMode.PARALLEL,
-                handler: async (_request: WSEvaluateRequest) => {
+                handler: async (_transaction: WSEvaluateTransaction) => {
                     return {
                         result: EvalResult.COMPLETE,
                         extraUpdates: [
@@ -811,7 +811,7 @@ describe('BasicStageDirector', () => {
             }],
         ]);
 
-        const requests: WSEvaluateRequest[] = [{
+        const transactions: WSEvaluateTransaction[] = [{
             handler: 'test-handler',
             sequence: 'test-seq',
             transactionId: 'test-transaction-id',
@@ -826,13 +826,13 @@ describe('BasicStageDirector', () => {
             } as any as MyHandlerInput,
         }];
 
-        const reply: WSEvaluateReply = {
+        const reply: WSHandleTransactionsResult = {
             results: [],
             messageType: WSMessageType.EVALUATE,
             id: 'test-id',
         };
-        const batch: WSEvaluateBatch = {
-            requests,
+        const batch: WSHandleTransactions = {
+            transactions,
             handler: 'test-handler',
             messageType: WSMessageType.EVALUATE_RESULT,
             id: 'test-id',
@@ -845,7 +845,7 @@ describe('BasicStageDirector', () => {
 })
 
 describe('StageDirectorHelper', () => {
-    const mockRequest: WSEvaluateRequest = {
+    const mockRequest: WSEvaluateTransaction = {
         handler: 'test-handler',
         sequence: 'test-seq',
         transactionId: 'test-transaction-id',

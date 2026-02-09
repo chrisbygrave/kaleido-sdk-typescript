@@ -13,7 +13,7 @@ The hello sample consists of two main components:
 
 ### Handler
 
-The hello handler (`handlers.ts`) accepts a transaction request with a `name` field in the input. It:
+The hello handler (`handlers.ts`) accepts a transaction with a `name` field in the input. It:
 
 - Validates that the `name` field is provided
 - Returns a personalized greeting message in the output

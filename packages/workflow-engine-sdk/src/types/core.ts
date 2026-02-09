@@ -132,25 +132,25 @@ export interface FlowRuntimeState {
 }
 
 /**
- * Event attached to a request
+ * Event attached to a transaction
  */
-export interface WSEvaluateRequestEvent {
+export interface WSEvaluateTransactionEvent {
   topic: string;
   data?: any;
 }
 
 /**
- * Individual evaluation request
+ * Individual evaluation transaction
  */
-export interface WSEvaluateRequest extends FlowRuntimeState {
+export interface WSEvaluateTransaction extends FlowRuntimeState {
   authRef?: string;
   input?: any;
   configProfile?: any;
-  events?: WSEvaluateRequestEvent[];
+  events?: WSEvaluateTransactionEvent[];
 }
 
 /**
- * Result for an individual request in a batch
+ * Result for an individual transaction in a batch
  */
 export interface WSEvaluateReplyResult {
   error?: string;
@@ -186,24 +186,10 @@ export interface WSEventProcessorBatchResult extends WSHandlerEnvelope {
 }
 
 /**
- * Batch of requests for evaluation
- */
-export interface WSEvaluateBatch extends WSHandlerEnvelope {
-  requests: WSEvaluateRequest[];
-}
-
-/**
- * Response to a batch evaluation
- */
-export interface WSEvaluateReply extends WSHandlerEnvelope {
-  results: WSEvaluateReplyResult[];
-}
-
-/**
- * Transaction handling request (batch of evaluate requests).
+ * Transaction handling transaction (batch of evaluate transactions).
  */
 export interface WSHandleTransactions extends WSHandlerEnvelope {
-  transactions: WSEvaluateRequest[];
+  transactions: WSEvaluateTransaction[];
 }
 
 /**
@@ -313,11 +299,11 @@ export interface ActionResult {
 
 /**
  * Internal type for tracking execution state during batch processing
- * Used by stage_director to manage request execution and results
+ * Used by stage_director to manage transaction execution and results
  */
-export interface ExecutableRequest<T = any> {
+export interface ExecutableTransaction<T = any> {
   idx: number;                        // Index in the original batch
-  request: WSEvaluateRequest;         // The request being processed
-  input: T;                           // Parsed input for the request
+  transaction: WSEvaluateTransaction;         // The transaction being processed
+  input: T;                           // Parsed input for the transaction
   result?: WSEvaluateReplyResult;     // Result after execution (if completed)
 }

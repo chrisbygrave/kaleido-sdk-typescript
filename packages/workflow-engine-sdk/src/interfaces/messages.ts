@@ -16,8 +16,8 @@
 
 
 import {
-  WSEvaluateBatch,
-  WSEvaluateReply,
+  WSHandleTransactions,
+  WSHandleTransactionsResult,
   WSRegisterHandler,
   WSEventSourceConfig,
   WSListenerPollRequest,
@@ -28,8 +28,8 @@ import {
  * All possible WebSocket message types
  */
 export type WSMessage =
-  | WSEvaluateBatch
-  | WSEvaluateReply
+  | WSHandleTransactions
+  | WSHandleTransactionsResult
   | WSRegisterHandler
   | WSEventSourceConfig
   | WSListenerPollRequest

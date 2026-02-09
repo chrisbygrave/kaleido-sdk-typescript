@@ -149,7 +149,7 @@ const client = new WorkflowEngineClient({
 const actionMap = new Map();
 actionMap.set('my-action', {
   invocationMode: InvocationMode.PARALLEL,
-  handler: async (request, input) => ({
+  handler: async (transaction, input) => ({
     result: EvalResult.COMPLETE,
     output: { /* ... */ }
   })

@@ -24,8 +24,8 @@
 
 import {
   WithStageDirector,
-  WSEvaluateBatch,
-  WSEvaluateReply,
+  WSHandleTransactions,
+  WSHandleTransactionsResult,
 } from '../types/core';
 import {
   TransactionHandler,
@@ -83,8 +83,8 @@ class TransactionHandlerBase<T extends WithStageDirector> implements Transaction
   }
 
   async transactionHandlerBatch(
-    reply: WSEvaluateReply,
-    batch: WSEvaluateBatch
+    reply: WSHandleTransactionsResult,
+    batch: WSHandleTransactions
   ): Promise<void> {
     await evalDirected(reply, batch, this.actionMap);
   }
@@ -93,7 +93,7 @@ class TransactionHandlerBase<T extends WithStageDirector> implements Transaction
 /**
  * Create a new simple directed handler, with no initialization.
  *
- * A directed handler uses the StageDirector pattern to route requests
+ * A directed handler uses the StageDirector pattern to route transactions
  * to different actions based on the input's `action` field.
  * 
  * @param name Handler name

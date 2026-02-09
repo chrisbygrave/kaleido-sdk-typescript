@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { BasicStageDirector, EvalResult, InvocationMode, WithStageDirector, WSEvaluateRequest } from "@kaleido-io/workflow-engine-sdk";
+import { BasicStageDirector, EvalResult, InvocationMode, WithStageDirector, WSEvaluateTransaction } from "@kaleido-io/workflow-engine-sdk";
 
 import { newLogger } from "@kaleido-io/workflow-engine-sdk";
 
@@ -47,7 +47,7 @@ const map = new Map();
 // Set trap action
 map.set('set-trap', {
     invocationMode: InvocationMode.PARALLEL,
-    handler: async (request: WSEvaluateRequest, input: SnapHandlerInput) => {
+    handler: async (transaction: WSEvaluateTransaction, input: SnapHandlerInput) => {
         const cardTopic = `suit.${input.suit}.rank.${input.rank}`;
         return {
             result: EvalResult.COMPLETE,
@@ -59,7 +59,7 @@ map.set('set-trap', {
 // Trap set action
 map.set('trap-set', {
     invocationMode: InvocationMode.PARALLEL,
-    handler: async (request: WSEvaluateRequest, input: SnapHandlerInput) => {
+    handler: async (transaction: WSEvaluateTransaction, input: SnapHandlerInput) => {
         const cardTopic = `suit.${input.suit}.rank.${input.rank}`;
         log.info(`Trap set: ${cardTopic}`);
         trapsSet.set(cardTopic, true);
@@ -72,8 +72,8 @@ map.set('trap-set', {
 // Trap fired action
 map.set('trap-fired', {
     invocationMode: InvocationMode.PARALLEL,
-    handler: async (request: WSEvaluateRequest, _input: SnapHandlerInput) => {
-        const snap = request.events![0];
+    handler: async (transaction: WSEvaluateTransaction, _input: SnapHandlerInput) => {
+        const snap = transaction.events![0];
         return {
             result: EvalResult.COMPLETE,
             output: snap.data
