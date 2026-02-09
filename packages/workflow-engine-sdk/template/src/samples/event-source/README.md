@@ -6,9 +6,9 @@ This example demonstrates how to set up a custom event source that generates eve
 
 The event source sample consists of three main components:
 
-1. **Event Source** (`event-source.ts`) - Generates timestamped events at regular intervals
+1. **Event source** (`event-source.ts`) - Generates timestamped events at regular intervals
 2. **Event Processor** (`event-processor.ts`) - Logs out any events it receives
-3. **Event Stream** (`stream.ts`) - Connects the event source to the event processor
+3. **Event stream** (`stream.ts`) - Connects the event source to the event processor
 
 ## How it works
 

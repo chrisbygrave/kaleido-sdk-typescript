@@ -1,16 +1,29 @@
 # Snap handler sample
 
-This example demonstrates how to set up a transaction handler that uses event triggers to wait for and respond to external events, implementing a "snap" card game mechanic.
+This example demonstrates how to set up a transaction handler that uses event triggers to wait for and respond to external events, implementing a "snap" card game mechanic. It showcases the use of a **correlation stream** to match events from any event source with inflight transactions.
 
 ## Overview
 
-The snap handler sample consists of three main components:
+The snap handler sample consists of four main components:
 
-1. **Transaction Handler** (`snap-handler.ts`) - Implements a card game "snap" mechanic with three actions
-2. **Event Source** (`event-source.ts`) - Acts as a card dealer, dealing cards from a shuffled deck
-3. **Workflow** (`flow.ts`) - Defines the workflow stages and event bindings
+1. **Transaction handler** (`snap-handler.ts`) - Implements a card game "snap" mechanic with three actions
+2. **Event source** (`event-source.ts`) - Acts as a card dealer, dealing cards from a shuffled deck
+3. **Correlation stream** (`stream.ts`) - Connects events from the event source to inflight transactions
+4. **Workflow** (`flow.ts`) - Defines the workflow stages and event bindings
 
 ## How it works
+
+### The snap game flow
+
+The snap game works by setting a "trap" for a specific playing card (suit and rank) and waiting for that card to be dealt. Here's how the complete flow works:
+
+1. **Transaction Creation**: A transaction is created with a suit and rank (e.g., "hearts" and "king")
+2. **Trap Setup**: The transaction handler sets up a trigger for that specific card
+3. **Waiting State**: The transaction enters a waiting state, listening for matching events
+4. **Card Dealing**: The event source (dealer) deals cards from a shuffled deck
+5. **Event Correlation**: The correlation stream receives card events and determines if they match any inflight transactions
+6. **Match Detection**: When a matching card is dealt, the stream adds a transaction event to the database
+7. **Handler Invocation**: The transaction handler is invoked with the matching event, completing the "snap"
 
 ### Transaction handler
 
@@ -30,6 +43,17 @@ The event source (`event-source.ts`) acts as a card dealer that generates card p
 
 The event source tracks how many cards have been dealt and stops generating events when the deck is exhausted.
 
+### Correlation stream
+
+The correlation stream (`stream.ts`) is a key component that demonstrates how events from any event source can be correlated with inflight transactions. The stream:
+
+- **Type**: `correlation_stream` - This type of stream evaluates events against all inflight transactions
+- **Event source**: Connects to the `snap-dealer` event source to receive card events
+- **Matching Logic**: When a card event is received, the workflow engine checks if any inflight transactions have event listeners that match the event's topic pattern
+- **Transaction Event**: If a match is found, the engine adds a transaction event to the database and invokes the corresponding transaction handler
+
+This is different from an `event_stream`, which routes events to event processors. A correlation stream allows transactions to wait for and respond to events from any source, making it ideal for event-driven workflows where transactions need to react to external events.
+
 ### Workflow
 
 The workflow (`flow.ts`) defines the stages and event bindings:
@@ -39,7 +63,7 @@ The workflow (`flow.ts`) defines the stages and event bindings:
 - **Event listener**: Listens for card play events matching the pattern `suit.<suit>.rank.<rank>`
 - **`snap` stage**: Final success stage reached when the matching card is played
 
-When the event source deals a card matching the trap (via an event with the matching topic), the workflow automatically transitions to the `snap` stage, completing the transaction.
+When the correlation stream receives a card event that matches an inflight transaction's event listener, the workflow engine automatically adds the event to that transaction and invokes the handler, causing the workflow to transition to the `snap` stage.
 
 ## Usage
 
@@ -61,11 +85,14 @@ When the event source deals a card matching the trap (via an event with the matc
    npm run create-workflow src/samples/snap/flow.ts
    ```
 
-5. Create an event stream to connect the dealer event source to the workflow engine (this can be done via the REST API or workflow engine UI).
+5. Post the correlation stream to connect the dealer event source to the workflow engine:
+   ```bash
+   npm run create-stream src/samples/snap/stream.ts
+   ```
 
 6. Create a transaction with a suit and rank to set a trap:
    ```bash
    npm run create-transaction src/samples/snap/transaction.json
    ```
 
-Once configured, the event source will deal cards from a shuffled deck, and the handler will wait for a card matching the specified suit and rank. When the dealer deals a matching card, the workflow will automatically transition to the `snap` stage, completing the transaction.
+Once configured, the event source will deal cards from a shuffled deck. The correlation stream will evaluate each card event against all inflight transactions. When a card matching a transaction's trap is dealt, the stream will add the event to that transaction, causing the handler to be invoked and the workflow to transition to the `snap` stage, completing the transaction.
