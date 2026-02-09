@@ -17,10 +17,8 @@
 import { BasicStageDirector, EvalResult, InvocationMode, WithStageDirector, WSEvaluateRequest } from "@kaleido-io/workflow-engine-sdk";
 
 import { newLogger } from "@kaleido-io/workflow-engine-sdk";
-import { PlayingCard } from "./event-source.js";
 
 const log = newLogger('snap-handler');
-
 
 class SnapHandlerInput implements WithStageDirector {
     public stageDirector: BasicStageDirector;
