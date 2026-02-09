@@ -14,7 +14,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import { newLogger } from "@kaleido-io/workflow-engine-sdk";
+import { EventSourceConf, newEventSource, newLogger } from "@kaleido-io/workflow-engine-sdk";
 
 const log = newLogger('dealer-event-source');
 
@@ -22,6 +22,10 @@ export interface PlayingCard {
     description: string;
     suit: string;
     rank: string;
+}
+
+interface DealerEventSourceConfig {
+    resetInterval: number;
 }
 
 export const suits = ['clubs', 'diamonds', 'hearts', 'spades'];
@@ -48,42 +52,73 @@ const shuffleDeck = (deck: PlayingCard[]): void => {
     }
 }
 
-const deck: PlayingCard[] = newDeck();
+let deck: PlayingCard[] = newDeck();
 shuffleDeck(deck);
 
 let dealt = 0;
 
-const dealerEventSource = {
-    name: () => 'snap-dealer',
-    init: async () => {
-        log.info('Dealer initialized');
-    },
-    close: () => {
-        log.info('Dealer closed');
-    },
-    eventSourcePoll: async (_config: any, result: any) => {
+interface DealerEventSourceCheckpoint {
+    dealt: number;
+}
+
+export const dealerEventSource = newEventSource<DealerEventSourceCheckpoint, DealerEventSourceConfig, PlayingCard>(
+    'snap-dealer',
+    async (_config: EventSourceConf<DealerEventSourceConfig>, _checkpoint: DealerEventSourceCheckpoint | null) => {
         const toDeal = Math.min(Math.floor(Math.random() * 9) + 1, deck.length - dealt);
         const dealSet = deck.slice(dealt, dealt + toDeal);
 
-        if (dealSet.length === 0) {
-            result.events = [];
-            result.checkpoint = { dealt };
-            return;
-        }
-
-        result.events = dealSet.map(card => ({
+        const events = dealSet.map(card => ({
             idempotencyKey: `${card.suit}-${card.rank}-${Date.now()}-${Math.random()}`,
             topic: `suit.${card.suit}.rank.${card.rank}`,
             data: card
         }));
 
         dealt += toDeal;
-        result.checkpoint = { dealt };
 
         log.info(`Dealt ${toDeal} cards, total: ${dealt}/${deck.length}`);
-    },
-    eventSourceValidateConfig: async () => { },
-    eventSourceDelete: async () => { }
-};
+
+        return {
+            checkpointOut: { dealt },
+            events
+        };
+    })
+    .withInitialCheckpoint(async () => ({
+        dealt: 0
+    }))
+    .withConfigParser(async (_, config: DealerEventSourceConfig) => {
+        log.info('Reset interval:', config.resetInterval || 10000);
+        setInterval(() => {
+            log.info('Resetting deck');
+            deck = newDeck();
+            shuffleDeck(deck);
+            dealt = 0;
+        }, config.resetInterval || 10000);
+        return {
+            resetInterval: config.resetInterval || 10000
+        };
+    })
+    .withDeleteFn(async (info) => {
+        log.info(`Cleaning up event source ${info.streamName} (${info.streamId})`);
+    });
+// const dealerEventSource = {
+//     name: () => 'snap-dealer',
+//     init: async (_engAPI: any, EventSourceConfig: EventSourceConf<DealerEventSourceConfig>) => {
+//         log.info('Dealer initialized');
+//         log.info('Reset interval:', EventSourceConfig.config.resetInterval);
+//         setInterval(() => {
+//             log.info('Resetting deck');
+//             deck = newDeck();
+//             shuffleDeck(deck);
+//             dealt = 0;
+//         }, EventSourceConfig.config.resetInterval);
+//     },
+//     close: () => {
+//         log.info('Dealer closed');
+//     },
+//     eventSourcePoll: async (_config: EventSourceConf<DealerEventSourceConfig>, result: any) => {
+//     },
+//     eventSourceValidateConfig: async () => { },
+//     eventSourceDelete: async () => { }
+// };
 
 export const eventSource = dealerEventSource;

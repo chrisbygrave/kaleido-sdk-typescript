@@ -37,7 +37,7 @@ export const eventSource = newEventSource<MyEventSourceCheckpoint, MyEventSource
   'my-listener',
   async (config: EventSourceConf<MyEventSourceConfig>, checkpoint: MyEventSourceCheckpoint | null) => {
     log.info('Polling for events with config:', config.config);
-    
+
     const now = Date.now();
     let lastPollTime = checkpoint?.lastPollTime || now;
     const events: EventSourceEvent<MyEventData>[] = [];
@@ -57,14 +57,14 @@ export const eventSource = newEventSource<MyEventSourceCheckpoint, MyEventSource
     };
   }
 )
-.withInitialCheckpoint(async () => ({
-  lastPollTime: 0
-}))
-.withConfigParser(async (_info, config) => {
-  return {
-    pollingInterval: config.pollingInterval || 5000
-  };
-})
-.withDeleteFn(async (info) => {
-  log.info(`Cleaning up event source ${info.streamName} (${info.streamId})`);
-});
+  .withInitialCheckpoint(async () => ({
+    lastPollTime: 0
+  }))
+  .withConfigParser(async (_, config: MyEventSourceConfig) => {
+    return {
+      pollingInterval: config.pollingInterval || 5000
+    };
+  })
+  .withDeleteFn(async (info) => {
+    log.info(`Cleaning up event source ${info.streamName} (${info.streamId})`);
+  });
