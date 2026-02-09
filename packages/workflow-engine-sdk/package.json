@@ -23,9 +23,7 @@
     "test:component": "jest tests/componenttest",
     "test:all": "jest --coverage",
     "lint": "eslint . --config eslint.config.mjs",
-    "lint:fix": "eslint . --fix --config eslint.config.mjs",
-    "demo": "npm run build && node dist/examples/demo.js",
-    "example": "npm run build && node dist/examples/usage-example.js"
+    "lint:fix": "eslint . --fix --config eslint.config.mjs"
   },
   "keywords": [
     "kaleido",
