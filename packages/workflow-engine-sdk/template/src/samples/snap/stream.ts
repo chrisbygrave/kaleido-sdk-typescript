@@ -22,5 +22,5 @@ export const stream = {
     type: 'correlation_stream',
     listenerHandler: 'snap-dealer',
     listenerHandlerProvider: provider.name,
-    config: { game: 'snap' }
+    config: { resetInterval: 10000 }
 }
