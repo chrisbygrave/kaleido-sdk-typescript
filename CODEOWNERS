@@ -1,0 +1,5 @@
+# default code owners
+*            @kaleido-io/kaleido-owner-sdk
+
+# CodeOwner config admin
+CODEOWNERS   @kaleido-io/kaleido-owner-compliance
