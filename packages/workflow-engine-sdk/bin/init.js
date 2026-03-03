@@ -20,28 +20,29 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 
 import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
+const projectNameRegex = /^(?:@[a-z0-9][a-z0-9-]*\/[a-z0-9][a-z0-9-]*|[a-z0-9][a-z0-9-]*)$/;
+
 const templateConfig = {
-    "variables": {
-      "PROVIDER_NAME": {
-        "description": "The npm package name for the provider",
-        "default": "my-provider",
-        "required": true,
-        "validate": "^[a-z0-9-]+$"
-      }
+  "variables": {
+    "PROVIDER_NAME": {
+      "description": "The npm package name for the provider",
+      "default": "my-provider",
+      "required": true
+    }
+  },
+  "files": {
+    "package.json": {
+      "replace": [
+        "PROVIDER_NAME"
+      ]
     },
-    "files": {
-      "package.json": {
-        "replace": [
-          "PROVIDER_NAME"
-        ]
-      },
-      "src/provider.ts": {
-        "replace": [
-          "PROVIDER_NAME",
-        ]
-      }
+    "src/provider.ts": {
+      "replace": [
+        "PROVIDER_NAME",
+      ]
     }
   }
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -66,7 +67,7 @@ Options:
   --help, -h     Show this help message
 
 Examples:
-  npx @kaleido-io/workflow-engine-sdk init my-provider
+  npx @kaleido-io/workflow-engine-sdk init @my-scope/my-provider
   npx @kaleido-io/workflow-engine-sdk init my-custom-provider
 `);
   process.exit(0);
@@ -74,10 +75,10 @@ Examples:
 
 const projectName = args[0];
 
-// Validate project name (npm package name rules)
-if (!/^[a-z0-9-]+$/.test(projectName)) {
+// Validate project name (npm package name rules: unscoped or @scope/name)
+if (!projectNameRegex.test(projectName)) {
   console.error(`Error: Project name "${projectName}" is invalid.`);
-  console.error('Project names must contain only lowercase letters, numbers, and hyphens.');
+  console.error('Project names must contain only lowercase letters, numbers, and hyphens, and optionally a scope prefix.');
   process.exit(1);
 }
 
@@ -135,17 +136,17 @@ function shouldExclude(filePath, relativePath) {
 
 function copyTemplate(src, dest, basePath = '') {
   const entries = readdirSync(src, { withFileTypes: true });
-  
+
   for (const entry of entries) {
     const srcPath = join(src, entry.name);
     const relativePath = join(basePath, entry.name);
-    
+
     if (shouldExclude(srcPath, relativePath)) {
       continue;
     }
-    
+
     const destPath = join(dest, entry.name);
-    
+
     if (entry.isDirectory()) {
       mkdirSync(destPath, { recursive: true });
       copyTemplate(srcPath, destPath, relativePath);
@@ -153,7 +154,7 @@ function copyTemplate(src, dest, basePath = '') {
       try {
         // Read file content
         let content = readFileSync(srcPath, 'utf-8');
-        
+
         // Check if this file needs variable replacement
         const fileConfig = templateConfig.files?.[relativePath];
         if (fileConfig && fileConfig.replace) {
@@ -172,7 +173,7 @@ function copyTemplate(src, dest, basePath = '') {
             content = content.replace(regex, value);
           }
         }
-        
+
         writeFileSync(destPath, content, 'utf-8');
       } catch (error) {
         // Skip files that can't be read (permissions, symlinks, etc.)
