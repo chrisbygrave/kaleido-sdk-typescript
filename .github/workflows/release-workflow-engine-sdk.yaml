@@ -88,11 +88,11 @@ jobs:
           } >> $GITHUB_OUTPUT
 
       - name: Publish to npm with primary tag
-        continue-on-error: true
         working-directory: packages/workflow-engine-sdk
         shell: bash
         run: |
           set -e
+          npm install
           npm run build
           npm publish --provenance --access public --tag ${{ steps.parse_tags.outputs.primary_tag }}
 
