@@ -93,6 +93,7 @@ jobs:
         shell: bash
         run: |
           set -e
+          npm install
           npm run build
           npm publish --provenance --access public --tag ${{ steps.parse_tags.outputs.primary_tag }}
 
